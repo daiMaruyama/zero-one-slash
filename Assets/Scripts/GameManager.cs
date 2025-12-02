@@ -1,15 +1,24 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-    // テスト（残り点数）
+    // === 設定項目 ===
+    [Header("ゲーム設定")]
+    [SerializeField] float timeLimit = 60.0f;
+    [SerializeField] float throwCooldown = 0.3f;
+    [SerializeField] float nextQuestionDelay = 1.5f;
+
     int[] questionList = { 32, 40, 50, 60, 36, 20, 16, 81, 101 };
 
     [Header("UI設定")]
-    public Text targetText;      // 中央の残りスコア表示
-    public Text infoText;        // 右下の情報表示（投数、トータルスコア）
+    public Text targetText;      // 中央の残りスコア
+    public Text infoText;        // 右下の情報（投数、スコア）
+    public Text timeText;        // 制限時間
+    public GameObject resultPanel;
+    public Text resultScoreText;
 
     [Header("エフェクト設定")]
     public GameObject hitEffectPrefab;
@@ -22,25 +31,24 @@ public class GameManager : MonoBehaviour
     public AudioClip seInnerBull;
     public AudioClip seWin;
     public AudioClip seFail;
-
-    // BGM用
+    public AudioClip seMiss;
     public AudioClip bgmMain;
 
-    private AudioSource audioSourceSE;
-    private AudioSource audioSourceBGM;
+    AudioSource audioSourceSE;
+    AudioSource audioSourceBGM;
 
-    // ゲーム内変数
-    int currentTargetScore; // 現在の問題の残りスコア
-    int throwsLeft;         // 1ターンの残り投数（3スタート）
-    int totalGameScore;     // プレイヤーの獲得ポイント（クリア時の報酬）
+    float currentTime;
+    int currentTargetScore;
+    int throwsLeft;
+    int totalGameScore;
+    bool isGameActive;
+    bool isInputBlocked;
 
     void Start()
     {
-        // AudioSourceのセットアップ
         audioSourceSE = gameObject.AddComponent<AudioSource>();
         audioSourceBGM = gameObject.AddComponent<AudioSource>();
 
-        // BGM再生
         if (bgmMain != null)
         {
             audioSourceBGM.clip = bgmMain;
@@ -49,123 +57,184 @@ public class GameManager : MonoBehaviour
             audioSourceBGM.Play();
         }
 
+        if (resultPanel != null) resultPanel.SetActive(false);
         totalGameScore = 0;
+        currentTime = timeLimit;
+        isGameActive = true;
+        isInputBlocked = false;
+
         NextQuestion();
     }
 
-    // 次の問題へ
+    void Update()
+    {
+        if (isGameActive)
+        {
+            currentTime -= Time.deltaTime;
+
+            // 時間表示の更新
+            if (timeText != null)
+            {
+                timeText.text = "Time: " + currentTime.ToString("F1");
+            }
+
+            if (currentTime <= 0)
+            {
+                currentTime = 0;
+                GameOver();
+            }
+        }
+    }
+
     public void NextQuestion()
     {
-        // 問題をランダム選択
         currentTargetScore = questionList[Random.Range(0, questionList.Length)];
-
-        // 投数をリセット
         throwsLeft = 3;
-
+        isInputBlocked = false;
         UpdateUI();
     }
 
-    // DartsBoardから呼ばれる処理
     public void ProcessHit(string areaCode, int hitScore, Vector2 hitPosition)
     {
-        // 1. 投げる回数を減らす
+        if (!isGameActive || isInputBlocked) return;
+        isInputBlocked = true;
+
         throwsLeft--;
 
-        // 2. 音とエフェクトの再生
+        // 音とエフェクト
         PlayHitSound(areaCode);
-        if (hitEffectPrefab) Instantiate(hitEffectPrefab, hitPosition, Quaternion.identity);
+        if (hitEffectPrefab && areaCode != "OUT")
+        {
+            Instantiate(hitEffectPrefab, hitPosition, Quaternion.identity);
+        }
 
-        // 3. 引き算処理
+        // カメラシェイク
+        if (areaCode == "OUT")
+        {
+            // アウトは揺らさない
+        }
+        else if (areaCode.StartsWith("T") || areaCode.Contains("Bull"))
+        {
+            if (CameraShake.instance) CameraShake.instance.Shake(0.2f, 0.1f);
+        }
+        else
+        {
+            if (CameraShake.instance) CameraShake.instance.Shake(0.1f, 0.05f);
+        }
+
+        // 計算
         int tempScore = currentTargetScore - hitScore;
-        Debug.Log($"Hit: {areaCode} (-{hitScore}) 残り: {tempScore}");
+        Debug.Log($"Hit: {areaCode} (-{hitScore}) -> Remaining: {tempScore}");
+
+        // === 判定ロジックの整理 ===
 
         if (tempScore == 0)
         {
-            // === クリア（上がり！） ===
-            WinProcess(areaCode);
+            // パターン1: ピッタリ0になった（Win判定へ）
+            // 条件: Double, Triple, BullのいずれかならOK
+            if (areaCode.StartsWith("D") || areaCode.StartsWith("T") || areaCode.Contains("Bull"))
+            {
+                WinProcess(areaCode);
+            }
+            else
+            {
+                // Singleで0になってしまった（Single Out）
+                FailProcess("Single Out...");
+            }
         }
         else if (tempScore < 0)
         {
-            // === バースト（引きすぎ） ===
+            // パターン2: 0を下回った（Bust）
             FailProcess("Bust!!");
         }
         else
         {
-            // === まだ途中 ===
-            // スコアを更新して続行
+            // パターン3: まだ0になっていない（継続）
             currentTargetScore = tempScore;
 
             if (throwsLeft <= 0)
             {
-                // 3投使い切ってしまった
+                // 3投投げきってしまった（Time Over / Lose）
                 FailProcess("Time Over...");
             }
             else
             {
+                // まだ投げられる（Next Throw）
+                StartCoroutine(CooldownRoutine(throwCooldown));
                 UpdateUI();
             }
         }
     }
 
-    // クリア時の処理
     void WinProcess(string finishingArea)
     {
-        // シングル上がり = 1点
-        // ダブル・トリプル・ブル上がり = 3点
-        int pointsGet = 0;
-
-        if (finishingArea.StartsWith("S"))
-        {
-            pointsGet = 1;
-            Debug.Log("Single Finish! (+1pt)");
-        }
-        else
-        {
-            // D, T, Inner Bull, Outer Bull
-            pointsGet = 3;
-            Debug.Log("Nice Finish! (+3pt)");
-        }
-
+        // ダブル、トリプル、ブル上がりは3点、万が一設定変更でシングル許可した場合は1点
+        int pointsGet = (finishingArea.StartsWith("S")) ? 1 : 3;
         totalGameScore += pointsGet;
 
-        // 演出
         if (seWin) audioSourceSE.PlayOneShot(seWin);
-        targetText.text = "WIN!!";
+        if (targetText != null) targetText.text = "WIN!!";
 
-        // 少し待って次へ
-        Invoke("NextQuestion", 1.5f);
+        StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
-    // 失敗時の処理
     void FailProcess(string reason)
     {
-        // 演出
         if (seFail) audioSourceSE.PlayOneShot(seFail);
-        targetText.text = reason;
+        if (targetText != null) targetText.text = reason;
 
-        // ポイント加算なしで次へ
-        Invoke("NextQuestion", 1.5f);
+        StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
-    // 音の出し分けロジック
+    void GameOver()
+    {
+        isGameActive = false;
+        isInputBlocked = true;
+
+        if (resultPanel != null)
+        {
+            resultPanel.SetActive(true);
+            if (resultScoreText != null)
+            {
+                resultScoreText.text = "SCORE\n" + totalGameScore;
+            }
+        }
+    }
+
+    public void RetryGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    IEnumerator CooldownRoutine(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        if (isGameActive) isInputBlocked = false;
+    }
+
+    IEnumerator NextQuestionDelayRoutine(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        if (isGameActive) NextQuestion();
+    }
+
     void PlayHitSound(string areaCode)
     {
-        AudioClip clipToPlay = seSingle; // デフォルト
+        AudioClip clipToPlay = seSingle;
 
-        if (areaCode.StartsWith("D")) clipToPlay = seDouble;
+        if (areaCode == "OUT") clipToPlay = seMiss;
+        else if (areaCode.StartsWith("D")) clipToPlay = seDouble;
         else if (areaCode.StartsWith("T")) clipToPlay = seTriple;
         else if (areaCode == "Outer Bull") clipToPlay = seOuterBull;
         else if (areaCode == "Inner Bull") clipToPlay = seInnerBull;
 
-        // 音程をランダムにずらして自然にする
         audioSourceSE.pitch = Random.Range(0.95f, 1.05f);
         if (clipToPlay != null) audioSourceSE.PlayOneShot(clipToPlay);
     }
 
     void UpdateUI()
     {
-        if (targetText != null) targetText.text = currentTargetScore.ToString();
-
+        if (targetText != null) targetText.text = "TARGET: " + currentTargetScore.ToString();
         if (infoText != null) infoText.text = $"あと {throwsLeft} 投 / Total: {totalGameScore} pt";
     }
 }
