@@ -45,6 +45,10 @@ public class GameManager : MonoBehaviour
     int totalGameScore;
     bool isGameActive;
     bool isInputBlocked;
+    public bool CanThrow
+    {
+        get { return isGameActive && !isInputBlocked; }
+    }
 
     void Start()
     {
@@ -185,6 +189,11 @@ public class GameManager : MonoBehaviour
         }
 
         totalGameScore += pointsGet;
+
+        if (BloomManager.instance != null)
+        {
+            BloomManager.instance.FlashBloom(pointsGet);
+        }
 
         if (seWin) audioSourceSE.PlayOneShot(seWin);
         if (targetText != null) targetText.text = "WIN!!";

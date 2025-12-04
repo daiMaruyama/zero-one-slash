@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using UnityEngine.EventSystems; // 追加：UI越しのタップ防止に必要
+using UnityEngine.EventSystems;
 
 public class DartsBoard : MonoBehaviour
 {
@@ -14,31 +14,62 @@ public class DartsBoard : MonoBehaviour
     public float doubleOuter = 6.0f;
 
     [Header("アウト判定の設定")]
-    public float missRadius = 8.0f; // ★追加：これより外は反応しない、内側ならOUT
+    public float missRadius = 8.0f;
+
+    [Header("演出用")]
+    public Card cardPrefab;
 
     void Update()
     {
         if (Input.GetMouseButtonDown(0))
         {
-            // 追加：UI（リザルト画面など）の上をクリックしていたら無視する
-            if (EventSystem.current.IsPointerOverGameObject())
-            {
-                return;
-            }
-
-            // スマホ対応（タッチ操作の場合）
+            // UI越しのタップ防止
+            if (EventSystem.current.IsPointerOverGameObject()) return;
             if (Input.touchCount > 0)
             {
-                if (EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId))
-                {
-                    return;
-                }
+                if (EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId)) return;
             }
+
+            // 連射防止の確認
+            // GameManagerを探して、投げていい状態か聞く
+            GameManager gm = FindObjectOfType<GameManager>();
+
+            // GMがいない、または「投げちゃダメ(CanThrowがfalse)」なら無視
+            if (gm != null && !gm.CanThrow) return;
 
             Vector2 tapPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2 center = transform.position;
 
-            CalculateScore(tapPos, center);
+            ThrowCard(tapPos, center);
+        }
+    }
+
+    void ThrowCard(Vector2 targetPos, Vector2 center)
+    {
+        if (cardPrefab != null)
+        {
+            // 画面の中央下から発射
+            Vector3 startPos = new Vector3(0, -6, -5);
+
+            Card card = Instantiate(cardPrefab, startPos, Quaternion.identity);
+
+            // 発射！第3引数が「刺さった時に実行する中身」
+            card.Fire(startPos, targetPos, () => {
+
+                // === 刺さった瞬間の処理 ===
+
+                // 1. ヒットストップ（ここで使用！）
+                // ここでHitStopManagerを呼び出し、時間を一瞬止める
+                if (HitStopManager.instance) HitStopManager.instance.StopFrame(0.05f);
+
+                // 2. 判定とスコア計算
+                CalculateScore(targetPos, center);
+            });
+        }
+        else
+        {
+            // Prefab設定がない場合の予備動作
+            CalculateScore(targetPos, center);
         }
     }
 
@@ -46,27 +77,16 @@ public class DartsBoard : MonoBehaviour
     {
         float distance = Vector2.Distance(tapPos, center);
 
-        // 1. 完全な範囲外（タップ無効）
-        if (distance > missRadius)
-        {
-            return; // 何も起きない
-        }
+        if (distance > missRadius) return;
 
-        // 2. アウト判定（ダブルの外側 〜 ミス範囲の内側）
+        // アウト判定
         if (distance > doubleOuter)
         {
-            Debug.Log("OUT判定！投げたことになります");
-
-            // GameManagerに「OUT」と「0点」を送る
             GameManager gmTemp = FindObjectOfType<GameManager>();
-            if (gmTemp != null)
-            {
-                gmTemp.ProcessHit("OUT", 0, tapPos);
-            }
+            if (gmTemp != null) gmTemp.ProcessHit("OUT", 0, tapPos);
             return;
         }
 
-        // 3. ボード内の判定（既存ロジック）
         string typePrefix = "S";
         int multiplier = 1;
         bool isBull = false;
@@ -121,8 +141,6 @@ public class DartsBoard : MonoBehaviour
             finalScore = baseScore * multiplier;
         }
 
-        Debug.Log($"判定: {areaCode} ({finalScore}点)");
-
         GameManager gm = FindObjectOfType<GameManager>();
         if (gm != null)
         {
@@ -130,7 +148,6 @@ public class DartsBoard : MonoBehaviour
         }
     }
 
-    // ギズモも更新
     void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
@@ -142,8 +159,6 @@ public class DartsBoard : MonoBehaviour
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, doubleInner);
         Gizmos.DrawWireSphere(transform.position, doubleOuter);
-
-        // アウトエリアを表示（黄色）
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, missRadius);
     }
