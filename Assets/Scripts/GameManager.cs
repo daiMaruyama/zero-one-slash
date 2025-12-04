@@ -1,29 +1,31 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-    // === İ’è€–Ú ===
-    [Header("ƒQ[ƒ€İ’è")]
+    // === è¨­å®šé …ç›® ===
+    [Header("ã‚²ãƒ¼ãƒ è¨­å®š")]
     [SerializeField] float timeLimit = 60.0f;
     [SerializeField] float throwCooldown = 0.3f;
     [SerializeField] float nextQuestionDelay = 1.5f;
 
     int[] questionList = { 32, 40, 50, 60, 36, 20, 16, 81, 101 };
 
-    [Header("UIİ’è")]
-    public Text targetText;      // ’†‰›‚Ìc‚èƒXƒRƒA
-    public Text infoText;        // ‰E‰º‚Ìî•ñi“Š”AƒXƒRƒAj
-    public Text timeText;        // §ŒÀŠÔ
+    [Header("UIè¨­å®š")]
+    public Text targetText;
+    public Text timeText;
+    public Slider timeSlider;
+    public GameObject[] throwIcons;
+    public Text scoreText;
     public GameObject resultPanel;
     public Text resultScoreText;
 
-    [Header("ƒGƒtƒFƒNƒgİ’è")]
+    [Header("ã‚¨ãƒ•ã‚§ã‚¯ãƒˆè¨­å®š")]
     public GameObject hitEffectPrefab;
 
-    [Header("ƒI[ƒfƒBƒIİ’è")]
+    [Header("ã‚ªãƒ¼ãƒ‡ã‚£ã‚ªè¨­å®š")]
     public AudioClip seSingle;
     public AudioClip seDouble;
     public AudioClip seTriple;
@@ -72,10 +74,29 @@ public class GameManager : MonoBehaviour
         {
             currentTime -= Time.deltaTime;
 
-            // ŠÔ•\¦‚ÌXV
-            if (timeText != null)
+            if (timeText != null) timeText.text = "TIME " + currentTime.ToString("F1");
+            // æ™‚é–“è¡¨ç¤ºã®æ›´æ–°
+            if (timeSlider != null)
             {
-                timeText.text = "Time: " + currentTime.ToString("F1");
+                float ratio = currentTime / timeLimit;
+                timeSlider.value = ratio;
+
+                // ã‚¹ãƒ©ã‚¤ãƒ€ãƒ¼ã®ä¸­èº«ï¼ˆFillï¼‰ã®ç”»åƒã‚’å–å¾—ã—ã¦è‰²ã‚’å¤‰ãˆã‚‹
+                // â€» timeSlider.fillRect ãŒ Fill ã® RectTransform ã§ã™
+                Image fillImage = timeSlider.fillRect.GetComponent<Image>();
+
+                if (ratio < 0.2f) // æ®‹ã‚Š20%ä»¥ä¸‹ï¼ˆãƒ”ãƒ³ãƒï¼ï¼‰
+                {
+                    fillImage.color = Color.red; // èµ¤ãã™ã‚‹
+                }
+                else if (ratio < 0.5f) // åŠåˆ†åˆ‡ã£ãŸ
+                {
+                    fillImage.color = Color.yellow; // é»„è‰²
+                }
+                else
+                {
+                    fillImage.color = Color.cyan; // é€šå¸¸ã¯æ°´è‰²
+                }
             }
 
             if (currentTime <= 0)
@@ -101,18 +122,13 @@ public class GameManager : MonoBehaviour
 
         throwsLeft--;
 
-        // ‰¹‚ÆƒGƒtƒFƒNƒg
         PlayHitSound(areaCode);
         if (hitEffectPrefab && areaCode != "OUT")
         {
             Instantiate(hitEffectPrefab, hitPosition, Quaternion.identity);
         }
 
-        // ƒJƒƒ‰ƒVƒFƒCƒN
-        if (areaCode == "OUT")
-        {
-            // ƒAƒEƒg‚Í—h‚ç‚³‚È‚¢
-        }
+        if (areaCode == "OUT") { }
         else if (areaCode.StartsWith("T") || areaCode.Contains("Bull"))
         {
             if (CameraShake.instance) CameraShake.instance.Shake(0.2f, 0.1f);
@@ -122,44 +138,30 @@ public class GameManager : MonoBehaviour
             if (CameraShake.instance) CameraShake.instance.Shake(0.1f, 0.05f);
         }
 
-        // ŒvZ
         int tempScore = currentTargetScore - hitScore;
         Debug.Log($"Hit: {areaCode} (-{hitScore}) -> Remaining: {tempScore}");
 
-        // === ”»’èƒƒWƒbƒN‚Ì®— ===
-
+        // åˆ¤å®šãƒ­ã‚¸ãƒƒã‚¯
         if (tempScore == 0)
         {
-            // ƒpƒ^[ƒ“1: ƒsƒbƒ^ƒŠ0‚É‚È‚Á‚½iWin”»’è‚Öj
-            // ğŒ: Double, Triple, Bull‚Ì‚¢‚¸‚ê‚©‚È‚çOK
-            if (areaCode.StartsWith("D") || areaCode.StartsWith("T") || areaCode.Contains("Bull"))
-            {
-                WinProcess(areaCode);
-            }
-            else
-            {
-                // Single‚Å0‚É‚È‚Á‚Ä‚µ‚Ü‚Á‚½iSingle Outj
-                FailProcess("Single Out...");
-            }
+            // ã©ã‚“ãªä¸ŠãŒã‚Šæ–¹ã§ã‚‚WinProcessã¸é€ã‚‹
+            WinProcess(areaCode);
         }
         else if (tempScore < 0)
         {
-            // ƒpƒ^[ƒ“2: 0‚ğ‰º‰ñ‚Á‚½iBustj
             FailProcess("Bust!!");
         }
         else
         {
-            // ƒpƒ^[ƒ“3: ‚Ü‚¾0‚É‚È‚Á‚Ä‚¢‚È‚¢iŒp‘±j
             currentTargetScore = tempScore;
 
             if (throwsLeft <= 0)
             {
-                // 3“Š“Š‚°‚«‚Á‚Ä‚µ‚Ü‚Á‚½iTime Over / Losej
-                FailProcess("Time Over...");
+                // æ™‚é–“åˆ‡ã‚Œã§ã¯ãªã„ã®ã§ Turn End ã«å¤‰æ›´
+                FailProcess("Turn End");
             }
             else
             {
-                // ‚Ü‚¾“Š‚°‚ç‚ê‚éiNext Throwj
                 StartCoroutine(CooldownRoutine(throwCooldown));
                 UpdateUI();
             }
@@ -168,8 +170,20 @@ public class GameManager : MonoBehaviour
 
     void WinProcess(string finishingArea)
     {
-        // ƒ_ƒuƒ‹AƒgƒŠƒvƒ‹Aƒuƒ‹ã‚ª‚è‚Í3“_A–œ‚ªˆêİ’è•ÏX‚ÅƒVƒ“ƒOƒ‹‹–‰Â‚µ‚½ê‡‚Í1“_
-        int pointsGet = (finishingArea.StartsWith("S")) ? 1 : 3;
+        // ã‚·ãƒ³ã‚°ãƒ«ä¸ŠãŒã‚Š ã¾ãŸã¯ ã‚¢ã‚¦ã‚¿ãƒ¼ãƒ–ãƒ«ä¸ŠãŒã‚Š ã¯ 1ç‚¹
+        // ãã‚Œä»¥å¤–ï¼ˆãƒ€ãƒ–ãƒ«ã€ãƒˆãƒªãƒ—ãƒ«ã€ã‚¤ãƒ³ãƒŠãƒ¼ãƒ–ãƒ«ï¼‰ã¯ 3ç‚¹
+
+        int pointsGet = 0;
+
+        if (finishingArea.StartsWith("S") || finishingArea == "Outer Bull")
+        {
+            pointsGet = 1;
+        }
+        else
+        {
+            pointsGet = 3;
+        }
+
         totalGameScore += pointsGet;
 
         if (seWin) audioSourceSE.PlayOneShot(seWin);
@@ -221,7 +235,6 @@ public class GameManager : MonoBehaviour
     void PlayHitSound(string areaCode)
     {
         AudioClip clipToPlay = seSingle;
-
         if (areaCode == "OUT") clipToPlay = seMiss;
         else if (areaCode.StartsWith("D")) clipToPlay = seDouble;
         else if (areaCode.StartsWith("T")) clipToPlay = seTriple;
@@ -235,6 +248,15 @@ public class GameManager : MonoBehaviour
     void UpdateUI()
     {
         if (targetText != null) targetText.text = "TARGET: " + currentTargetScore.ToString();
-        if (infoText != null) infoText.text = $"‚ ‚Æ {throwsLeft} “Š / Total: {totalGameScore} pt";
+        if (scoreText != null) scoreText.text = "SCORE: " + totalGameScore.ToString();
+
+        if (throwIcons != null)
+        {
+            for (int i = 0; i < throwIcons.Length; i++)
+            {
+                if (i < throwsLeft) throwIcons[i].SetActive(true);
+                else throwIcons[i].SetActive(false);
+            }
+        }
     }
 }
