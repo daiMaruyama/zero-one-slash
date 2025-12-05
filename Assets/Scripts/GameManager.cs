@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using DG.Tweening;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,6 +11,11 @@ public class GameManager : MonoBehaviour
     [SerializeField] float timeLimit = 60.0f;
     [SerializeField] float throwCooldown = 0.3f;
     [SerializeField] float nextQuestionDelay = 1.5f;
+    [SerializeField] float winningZoomSize = 4.2f;
+
+    [Header("アニメーション設定")]
+    [SerializeField] float scoreCountDuration = 1.5f;
+    [SerializeField] Ease scoreEaseType = Ease.OutExpo;
 
     int[] questionList = { 32, 40, 50, 60, 36, 20, 16, 81, 101 };
 
@@ -24,6 +30,7 @@ public class GameManager : MonoBehaviour
 
     [Header("エフェクト設定")]
     public GameObject hitEffectPrefab;
+    public GameObject popupTextPrefab;
 
     [Header("オーディオ設定")]
     public AudioClip seSingle;
@@ -45,6 +52,7 @@ public class GameManager : MonoBehaviour
     int totalGameScore;
     bool isGameActive;
     bool isInputBlocked;
+
     public bool CanThrow
     {
         get { return isGameActive && !isInputBlocked; }
@@ -79,27 +87,21 @@ public class GameManager : MonoBehaviour
             currentTime -= Time.deltaTime;
 
             if (timeText != null) timeText.text = "TIME " + currentTime.ToString("F1");
-            // 時間表示の更新
+
             if (timeSlider != null)
             {
                 float ratio = currentTime / timeLimit;
                 timeSlider.value = ratio;
 
-                // スライダーの中身（Fill）の画像を取得して色を変える
-                // ※ timeSlider.fillRect が Fill の RectTransform です
-                Image fillImage = timeSlider.fillRect.GetComponent<Image>();
-
-                if (ratio < 0.2f) // 残り20%以下（ピンチ！）
+                if (timeSlider.fillRect != null)
                 {
-                    fillImage.color = Color.red; // 赤くする
-                }
-                else if (ratio < 0.5f) // 半分切った
-                {
-                    fillImage.color = Color.yellow; // 黄色
-                }
-                else
-                {
-                    fillImage.color = Color.cyan; // 通常は水色
+                    Image fillImage = timeSlider.fillRect.GetComponent<Image>();
+                    if (fillImage != null)
+                    {
+                        if (ratio < 0.2f) fillImage.color = Color.red;
+                        else if (ratio < 0.5f) fillImage.color = Color.yellow;
+                        else fillImage.color = Color.cyan;
+                    }
                 }
             }
 
@@ -125,11 +127,19 @@ public class GameManager : MonoBehaviour
         isInputBlocked = true;
 
         throwsLeft--;
+        UpdateUI();
 
         PlayHitSound(areaCode);
+
         if (hitEffectPrefab && areaCode != "OUT")
         {
             Instantiate(hitEffectPrefab, hitPosition, Quaternion.identity);
+        }
+
+        if (popupTextPrefab != null && areaCode != "OUT")
+        {
+            GameObject popup = Instantiate(popupTextPrefab, hitPosition, Quaternion.identity);
+            popup.transform.position = new Vector3(hitPosition.x, hitPosition.y, -3.0f);
         }
 
         if (areaCode == "OUT") { }
@@ -145,10 +155,8 @@ public class GameManager : MonoBehaviour
         int tempScore = currentTargetScore - hitScore;
         Debug.Log($"Hit: {areaCode} (-{hitScore}) -> Remaining: {tempScore}");
 
-        // 判定ロジック
         if (tempScore == 0)
         {
-            // どんな上がり方でもWinProcessへ送る
             WinProcess(areaCode);
         }
         else if (tempScore < 0)
@@ -158,25 +166,21 @@ public class GameManager : MonoBehaviour
         else
         {
             currentTargetScore = tempScore;
+            UpdateUI();
 
             if (throwsLeft <= 0)
             {
-                // 時間切れではないので Turn End に変更
                 FailProcess("Turn End");
             }
             else
             {
                 StartCoroutine(CooldownRoutine(throwCooldown));
-                UpdateUI();
             }
         }
     }
 
     void WinProcess(string finishingArea)
     {
-        // シングル上がり または アウターブル上がり は 1点
-        // それ以外（ダブル、トリプル、インナーブル）は 3点
-
         int pointsGet = 0;
 
         if (finishingArea.StartsWith("S") || finishingArea == "Outer Bull")
@@ -189,6 +193,11 @@ public class GameManager : MonoBehaviour
         }
 
         totalGameScore += pointsGet;
+
+        if (CameraController.instance != null)
+        {
+            CameraController.instance.ZoomIn(Vector3.zero, winningZoomSize, 0.2f);
+        }
 
         if (BloomManager.instance != null)
         {
@@ -217,11 +226,35 @@ public class GameManager : MonoBehaviour
         if (resultPanel != null)
         {
             resultPanel.SetActive(true);
-            if (resultScoreText != null)
-            {
-                resultScoreText.text = "SCORE\n" + totalGameScore;
-            }
+            AnimateResultScore();
         }
+    }
+
+    void AnimateResultScore()
+    {
+        if (resultScoreText == null) return;
+
+        int displayScore = 0;
+        resultScoreText.text = "SCORE\n0";
+
+        DOTween.To(
+            () => displayScore,
+            x => displayScore = x,
+            totalGameScore,
+            scoreCountDuration
+        )
+        .SetEase(scoreEaseType)
+        .OnUpdate(() =>
+        {
+            resultScoreText.text = "SCORE\n" + displayScore.ToString("N0");
+        })
+        .OnComplete(() =>
+        {
+            if (seWin) audioSourceSE.PlayOneShot(seWin);
+
+            // SetLoopsの第2引数で指定
+            resultScoreText.transform.DOScale(1.2f, 0.1f).SetLoops(2, LoopType.Yoyo);
+        });
     }
 
     public void RetryGame()
@@ -238,20 +271,57 @@ public class GameManager : MonoBehaviour
     IEnumerator NextQuestionDelayRoutine(float duration)
     {
         yield return new WaitForSeconds(duration);
+
+        if (CameraController.instance != null)
+        {
+            CameraController.instance.ResetCamera(0.5f);
+        }
+
         if (isGameActive) NextQuestion();
+    }
+
+    IEnumerator PlaySoundRoutine(AudioClip clip, int count)
+    {
+        if (clip == null) yield break;
+
+        for (int i = 0; i < count; i++)
+        {
+            audioSourceSE.pitch = Random.Range(0.95f, 1.05f);
+            audioSourceSE.PlayOneShot(clip);
+            yield return new WaitForSeconds(0.08f);
+        }
     }
 
     void PlayHitSound(string areaCode)
     {
         AudioClip clipToPlay = seSingle;
-        if (areaCode == "OUT") clipToPlay = seMiss;
-        else if (areaCode.StartsWith("D")) clipToPlay = seDouble;
-        else if (areaCode.StartsWith("T")) clipToPlay = seTriple;
-        else if (areaCode == "Outer Bull") clipToPlay = seOuterBull;
-        else if (areaCode == "Inner Bull") clipToPlay = seInnerBull;
+        int repeatCount = 1;
 
-        audioSourceSE.pitch = Random.Range(0.95f, 1.05f);
-        if (clipToPlay != null) audioSourceSE.PlayOneShot(clipToPlay);
+        if (areaCode == "OUT")
+        {
+            clipToPlay = seMiss;
+        }
+        else if (areaCode.StartsWith("D"))
+        {
+            clipToPlay = seDouble;
+            repeatCount = 2;
+        }
+        else if (areaCode.StartsWith("T"))
+        {
+            clipToPlay = seTriple;
+            repeatCount = 3;
+        }
+        else if (areaCode == "Outer Bull")
+        {
+            clipToPlay = seOuterBull;
+        }
+        else if (areaCode == "Inner Bull")
+        {
+            clipToPlay = seInnerBull;
+            repeatCount = 2;
+        }
+
+        StartCoroutine(PlaySoundRoutine(clipToPlay, repeatCount));
     }
 
     void UpdateUI()
