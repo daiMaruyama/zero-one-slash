@@ -1565,6 +1565,7 @@ GameObject:
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
   - component: {fileID: 519420033}
+  - component: {fileID: 519420035}
   - component: {fileID: 519420034}
   m_Layer: 6
   m_Name: Main Camera
@@ -1763,6 +1764,18 @@ MonoBehaviour:
   m_BeforeTransparentBundles: []
   m_BeforeStackBundles: []
   m_AfterStackBundles: []
+--- !u!114 &519420035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14307594fe17d3f42845e7bc3397ac03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -8409,7 +8422,10 @@ MonoBehaviour:
   missRadius: 3.4
   cardPrefab: {fileID: 5692719674400806139, guid: f9626b60d09e4f54caf00ba5b633e972, type: 3}
   highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  bullHighlightColor: {r: 1, g: 0, b: 0.38220167, a: 1}
+  innerBullHighlightColor: {r: 1, g: 0, b: 0, a: 1}
+  outerBullHighlightColor: {r: 1, g: 0.5, b: 0, a: 1}
+  highlightArcWidth: 17
+  dimmerIntensity: 0.64
 --- !u!1 &1443524803
 GameObject:
   m_ObjectHideFlags: 0
@@ -8613,6 +8629,7 @@ MonoBehaviour:
   timeLimit: 60
   throwCooldown: 0.3
   nextQuestionDelay: 1.5
+  winningZoomSize: 4.8
   targetText: {fileID: 1126998248}
   timeText: {fileID: 2025591014}
   timeSlider: {fileID: 1481073849}
@@ -8624,6 +8641,7 @@ MonoBehaviour:
   resultPanel: {fileID: 1423494453}
   resultScoreText: {fileID: 843418732}
   hitEffectPrefab: {fileID: 0}
+  popupTextPrefab: {fileID: 0}
   seSingle: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
   seDouble: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
   seTriple: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
