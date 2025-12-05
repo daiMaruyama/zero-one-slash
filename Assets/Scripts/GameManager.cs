@@ -238,6 +238,7 @@ public class GameManager : MonoBehaviour
         int displayScore = 0;
         resultScoreText.text = "SCORE\n0";
 
+        // スコア増加アニメーション
         DOTween.To(
             () => displayScore,
             x => displayScore = x,
@@ -247,15 +248,23 @@ public class GameManager : MonoBehaviour
         .SetEase(scoreEaseType)
         .OnUpdate(() =>
         {
-            resultScoreText.text = "SCORE\n" + displayScore.ToString("N0");
+            // 更新時も念のためnullチェック）
+            if (resultScoreText != null)
+                resultScoreText.text = "SCORE\n" + displayScore.ToString("N0");
         })
         .OnComplete(() =>
         {
-            // 修正: リザルト専用の音を鳴らす
             if (seResult) audioSourceSE.PlayOneShot(seResult);
 
-            resultScoreText.transform.DOScale(1.2f, 0.1f).SetLoops(2, LoopType.Yoyo);
-        });
+            // 完了時の演出
+            if (resultScoreText != null)
+            {
+                resultScoreText.transform.DOScale(1.2f, 0.1f)
+                    .SetLoops(2, LoopType.Yoyo)
+                    .SetLink(resultScoreText.gameObject);
+            }
+        })
+        .SetLink(resultScoreText.gameObject);
     }
 
     public void RetryGame()

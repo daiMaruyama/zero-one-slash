@@ -8630,6 +8630,8 @@ MonoBehaviour:
   throwCooldown: 0.3
   nextQuestionDelay: 1.5
   winningZoomSize: 4.8
+  scoreCountDuration: 1.5
+  scoreEaseType: 18
   targetText: {fileID: 1126998248}
   timeText: {fileID: 2025591014}
   timeSlider: {fileID: 1481073849}
@@ -8650,6 +8652,7 @@ MonoBehaviour:
   seWin: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
   seFail: {fileID: 0}
   seMiss: {fileID: 0}
+  seResult: {fileID: 0}
   bgmMain: {fileID: 0}
 --- !u!4 &1475186619
 Transform:
