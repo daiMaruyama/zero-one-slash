@@ -41,6 +41,7 @@ public class GameManager : MonoBehaviour
     public AudioClip seWin;
     public AudioClip seFail;
     public AudioClip seMiss;
+    public AudioClip seResult; // 追加: リザルト発表用の音
     public AudioClip bgmMain;
 
     AudioSource audioSourceSE;
@@ -250,9 +251,9 @@ public class GameManager : MonoBehaviour
         })
         .OnComplete(() =>
         {
-            if (seWin) audioSourceSE.PlayOneShot(seWin);
+            // 修正: リザルト専用の音を鳴らす
+            if (seResult) audioSourceSE.PlayOneShot(seResult);
 
-            // SetLoopsの第2引数で指定
             resultScoreText.transform.DOScale(1.2f, 0.1f).SetLoops(2, LoopType.Yoyo);
         });
     }
