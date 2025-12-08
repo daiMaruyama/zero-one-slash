@@ -41,8 +41,11 @@ public class GameManager : MonoBehaviour
     public AudioClip seWin;
     public AudioClip seFail;
     public AudioClip seMiss;
-    public AudioClip seResult; // 追加: リザルト発表用の音
+    public AudioClip seResult;
     public AudioClip bgmMain;
+
+    // 音量調整用（AudioManagerがない場合の予備）
+    [Range(0f, 1f)] public float baseBgmVolume = 0.5f;
 
     AudioSource audioSourceSE;
     AudioSource audioSourceBGM;
@@ -68,9 +71,11 @@ public class GameManager : MonoBehaviour
         {
             audioSourceBGM.clip = bgmMain;
             audioSourceBGM.loop = true;
-            audioSourceBGM.volume = 0.5f;
             audioSourceBGM.Play();
         }
+
+        // 起動時に一度音量を同期
+        SyncVolume();
 
         if (resultPanel != null) resultPanel.SetActive(false);
         totalGameScore = 0;
@@ -83,6 +88,9 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+        // 毎フレーム音量をAudioManagerと同期させる
+        SyncVolume();
+
         if (isGameActive)
         {
             currentTime -= Time.deltaTime;
@@ -112,6 +120,23 @@ public class GameManager : MonoBehaviour
                 GameOver();
             }
         }
+    }
+
+    // AudioManagerの設定を自分のスピーカーに適用する関数
+    void SyncVolume()
+    {
+        float targetBGM = baseBgmVolume;
+        float targetSE = 1.0f;
+
+        // AudioManagerが存在すれば、その設定を優先
+        if (AudioManager.instance != null)
+        {
+            targetBGM = AudioManager.instance.bgmVolume;
+            targetSE = AudioManager.instance.seVolume;
+        }
+
+        if (audioSourceBGM != null) audioSourceBGM.volume = targetBGM;
+        if (audioSourceSE != null) audioSourceSE.volume = targetSE;
     }
 
     public void NextQuestion()
@@ -238,7 +263,6 @@ public class GameManager : MonoBehaviour
         int displayScore = 0;
         resultScoreText.text = "SCORE\n0";
 
-        // スコア増加アニメーション
         DOTween.To(
             () => displayScore,
             x => displayScore = x,
@@ -248,7 +272,6 @@ public class GameManager : MonoBehaviour
         .SetEase(scoreEaseType)
         .OnUpdate(() =>
         {
-            // 更新時も念のためnullチェック）
             if (resultScoreText != null)
                 resultScoreText.text = "SCORE\n" + displayScore.ToString("N0");
         })
@@ -256,7 +279,6 @@ public class GameManager : MonoBehaviour
         {
             if (seResult) audioSourceSE.PlayOneShot(seResult);
 
-            // 完了時の演出
             if (resultScoreText != null)
             {
                 resultScoreText.transform.DOScale(1.2f, 0.1f)
