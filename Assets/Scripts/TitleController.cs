@@ -1,68 +1,221 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using DG.Tweening;
-using UnityEngine.UI; // DOTween•K{
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class TitleController : MonoBehaviour
 {
-    [Header("ì¬‚µ‚½•‘Ñ(Image)‚ğƒZƒbƒg")]
-    public RectTransform slashTop;    // ã‚Ì•‘Ñ
-    public RectTransform slashBottom; // ‰º‚Ì•‘Ñ
+    [Header("å¿…é ˆè¨­å®š")]
+    public string gameSceneName = "GameScene";
 
-    [Header("‰‰oİ’è")]
-    public RectTransform shakeTarget;
-    public float enterDuration = 0.5f; // “Ë‚«h‚³‚é‘¬‚³
-    public float shakeDuration = 0.4f; // —h‚ê‚Ì’·‚³
-    public float shakeStrength = 15f;  // —h‚ê‚Ì‹­‚³
+    [Header("ã‚¿ã‚¤ãƒˆãƒ«UI")]
+    public RectTransform slashTop;
+    public RectTransform slashBottom;
     public Text touchText;
+    public Text versionText;
 
-    // ÅI“I‚È”z’uˆÊ’u
-    Vector2 endPosTop;
-    Vector2 endPosBottom;
+    [Header("éŸ³å£°")]
+    public AudioClip seDecide;
+    public AudioClip seSlam;
+
+    [Header("æ¼”å‡ºèª¿æ•´")]
+    public float slashAngle = 15f;
+    public float closeSpeed = 0.35f;
+    public float shakePower = 50f;
+
+    // è‡ªå‹•ç”Ÿæˆå¤‰æ•°
+    private RectTransform gateTop;
+    private RectTransform gateBottom;
+    private CanvasGroup flashPanel;
+    private RectTransform shakeTarget;
+
+    private AudioSource audioSource;
+    private Vector2 endPosTop, endPosBottom;
+    private bool isTransitioning = false;
 
     void Start()
     {
-        // 1. ¡’u‚¢‚Ä‚ ‚éêŠiƒS[ƒ‹’n“_j‚ğ‹L‰¯
-        endPosTop = slashTop.anchoredPosition;
-        endPosBottom = slashBottom.anchoredPosition;
+        audioSource = gameObject.AddComponent<AudioSource>();
+        if (AudioManager.instance != null) audioSource.volume = AudioManager.instance.seVolume;
 
-        // 2. ‰æ–ÊŠO‚Ö”ò‚Î‚·i‰Šú‰»j
-        // 1920•‚È‚Ì‚ÅA}1800‚­‚ç‚¢ŠO‚Ö”ò‚Î‚¹‚ÎŒ©‚¦‚È‚­‚È‚é
-        slashTop.anchoredPosition = new Vector2(-1800, endPosTop.y);
-        slashBottom.anchoredPosition = new Vector2(1800, endPosBottom.y);
+        GenerateStylishGates();
 
+        // ãƒ†ã‚­ã‚¹ãƒˆã‚’é€æ˜çŠ¶æ…‹ã§åˆæœŸåŒ–
         if (touchText != null)
         {
-            touchText.DOFade(0.0f, 1.0f).SetLoops(-1, LoopType.Yoyo);
+            Color c = touchText.color;
+            c.a = 0f;
+            touchText.color = c;
         }
-        PlayEntrance();
+        if (versionText != null)
+        {
+            Color c = versionText.color;
+            c.a = 0f;
+            versionText.color = c;
+        }
+
+        if (slashTop != null && slashBottom != null)
+        {
+            endPosTop = slashTop.anchoredPosition;
+            endPosBottom = slashBottom.anchoredPosition;
+            slashTop.anchoredPosition = new Vector2(-2800, endPosTop.y);
+            slashBottom.anchoredPosition = new Vector2(2800, endPosBottom.y);
+
+            PlayEntrance();
+        }
+    }
+
+    void Update()
+    {
+        if (!isTransitioning && Input.GetMouseButtonDown(0))
+        {
+            StartGateTransition();
+        }
+    }
+
+    void OnDestroy()
+    {
+        transform.DOKill();
+        if (gateTop != null) gateTop.DOKill();
+        if (gateBottom != null) gateBottom.DOKill();
+        if (flashPanel != null) flashPanel.DOKill();
+        if (touchText != null) touchText.DOKill();
+        if (versionText != null) versionText.DOKill();
     }
 
     void PlayEntrance()
     {
-        // ã‚Ì‘Ñ‚ª“üêi¶‚©‚çj
-        slashTop.DOAnchorPos(endPosTop, enterDuration)
-            .SetEase(Ease.OutExpo) // ƒLƒŒ‚Ì‚ ‚é“®‚«
-            .SetDelay(0.2f);       // ­‚µ—­‚ß‚é
-
-        // ‰º‚Ì‘Ñ‚ª“üêi‰E‚©‚çj• Š®—¹‚ÉÕŒ‚I
-        slashBottom.DOAnchorPos(endPosBottom, enterDuration)
-            .SetEase(Ease.OutExpo)
-            .SetDelay(0.4f) // ã‚Ì‘Ñ‚æ‚è­‚µ’x‚ç‚¹‚é
+        // ãƒ­ã‚´å…¥å ´
+        slashTop.DOAnchorPos(endPosTop, 0.5f).SetEase(Ease.OutExpo).SetDelay(0.2f);
+        slashBottom.DOAnchorPos(endPosBottom, 0.5f).SetEase(Ease.OutExpo).SetDelay(0.4f)
             .OnComplete(() =>
             {
-                // “Ë‚«h‚³‚Á‚½uŠÔ‚É‰æ–ÊiCanvas‘S‘ÌA‚Ü‚½‚ÍƒJƒƒ‰j‚ğ—h‚ç‚·I
-                ImpactShake();
+                FadeInUI();
             });
     }
 
-    void ImpactShake()
+    void FadeInUI()
     {
-        // ƒJƒƒ‰‚Å‚Í‚È‚­Aw’è‚µ‚½UIishakeTargetj‚ğ—h‚ç‚·I
-        if (shakeTarget != null)
+        // ãƒ†ã‚­ã‚¹ãƒˆãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³
+        if (touchText != null)
         {
-            // Position‚Å‚Í‚È‚­ AnchorPos ‚ğ—h‚ç‚·‚Ì‚ªUI‚Ì“S‘¥
-            // strength: 30 (ƒsƒNƒZƒ‹’PˆÊ‚È‚Ì‚Å‘å‚«‚ß‚ÉI)
-            shakeTarget.DOShakeAnchorPos(0.4f, 30f, 20, 90, false, true);
+            touchText.DOFade(1f, 1.0f).OnComplete(() =>
+            {
+                touchText.DOFade(0f, 1.5f).SetLoops(-1, LoopType.Yoyo);
+            });
         }
+        if (versionText != null)
+        {
+            versionText.DOFade(1f, 1.0f);
+        }
+    }
+
+    void StartGateTransition()
+    {
+        isTransitioning = true;
+        if (seDecide != null) audioSource.PlayOneShot(seDecide);
+
+        if (touchText != null)
+        {
+            touchText.DOKill();
+            touchText.color = new Color(touchText.color.r, touchText.color.g, touchText.color.b, 1f);
+            touchText.transform.DOScale(1.2f, 0.05f).SetLoops(2, LoopType.Yoyo);
+        }
+
+        float overlap = 50f;
+
+        gateTop.DOAnchorPosY(-overlap, closeSpeed).SetEase(Ease.InExpo);
+
+        gateBottom.DOAnchorPosY(overlap, closeSpeed).SetEase(Ease.InExpo)
+            .OnComplete(() =>
+            {
+                if (seSlam != null) audioSource.PlayOneShot(seSlam);
+
+                if (shakeTarget != null)
+                    shakeTarget.DOShakeAnchorPos(0.5f, shakePower, 20, 90, false, true);
+
+                if (flashPanel != null)
+                {
+                    flashPanel.alpha = 1f;
+                    flashPanel.DOFade(0f, 0.5f);
+                }
+
+                DOVirtual.DelayedCall(0.5f, () => SceneManager.LoadScene(gameSceneName));
+            });
+    }
+
+    void GenerateStylishGates()
+    {
+        GameObject canvasGO = new GameObject("TransitionCanvas");
+        Canvas transCanvas = canvasGO.AddComponent<Canvas>();
+        transCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        transCanvas.sortingOrder = 999;
+        CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+
+        GameObject containerGO = new GameObject("ShakeContainer");
+        containerGO.transform.SetParent(canvasGO.transform, false);
+        shakeTarget = containerGO.AddComponent<RectTransform>();
+        shakeTarget.anchorMin = Vector2.zero; shakeTarget.anchorMax = Vector2.one;
+        shakeTarget.sizeDelta = Vector2.zero;
+
+        float width = 3500f;
+        float height = 2000f;
+
+        gateTop = CreateGate(shakeTarget, "Auto_GateTop", Color.black, width, height);
+        gateTop.pivot = new Vector2(0.5f, 0f);
+        gateTop.anchorMin = new Vector2(0.5f, 0.5f);
+        gateTop.anchorMax = new Vector2(0.5f, 0.5f);
+        gateTop.anchoredPosition = new Vector2(0, 1500);
+        gateTop.localRotation = Quaternion.Euler(0, 0, slashAngle);
+        CreateNeonLine(gateTop, Color.cyan, new Vector2(0.5f, 0f));
+
+        gateBottom = CreateGate(shakeTarget, "Auto_GateBottom", Color.black, width, height);
+        gateBottom.pivot = new Vector2(0.5f, 1f);
+        gateBottom.anchorMin = new Vector2(0.5f, 0.5f);
+        gateBottom.anchorMax = new Vector2(0.5f, 0.5f);
+        gateBottom.anchoredPosition = new Vector2(0, -1500);
+        gateBottom.localRotation = Quaternion.Euler(0, 0, slashAngle);
+        CreateNeonLine(gateBottom, Color.magenta, new Vector2(0.5f, 1f));
+
+        GameObject flashGO = new GameObject("Auto_FlashPanel");
+        flashGO.transform.SetParent(transCanvas.transform, false);
+        Image img = flashGO.AddComponent<Image>();
+        img.color = Color.white;
+        img.raycastTarget = false;
+        RectTransform rt = flashGO.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+        rt.sizeDelta = Vector2.zero;
+
+        flashPanel = flashGO.AddComponent<CanvasGroup>();
+        flashPanel.alpha = 0f;
+    }
+
+    RectTransform CreateGate(Transform parent, string name, Color col, float w, float h)
+    {
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        Image img = go.AddComponent<Image>();
+        img.color = col;
+        img.raycastTarget = false;
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(w, h);
+        return rt;
+    }
+
+    void CreateNeonLine(Transform parent, Color col, Vector2 pivot)
+    {
+        GameObject go = new GameObject("NeonLine");
+        go.transform.SetParent(parent, false);
+        Image img = go.AddComponent<Image>();
+        img.color = col;
+        RectTransform rt = go.GetComponent<RectTransform>();
+
+        rt.anchorMin = new Vector2(0, pivot.y);
+        rt.anchorMax = new Vector2(1, pivot.y);
+        rt.pivot = pivot;
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = new Vector2(0, 15);
     }
 }
