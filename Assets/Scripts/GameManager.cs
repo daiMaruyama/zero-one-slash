@@ -24,23 +24,24 @@ public class GameManager : MonoBehaviour
     [SerializeField] float scoreCountDuration = 1.5f;
     [SerializeField] Ease scoreEaseType = Ease.OutExpo;
 
-    // 出題されるターゲットスコアのリスト
     int[] questionList = { 32, 40, 50, 60, 36, 20, 16, 81, 101 };
 
     [Header("UI参照")]
-    // CyberTextに変更
     public CyberText targetText;
     public Text timeText;
     public Slider timeSlider;
     public GameObject[] throwIcons;
-    // CyberTextに変更
     public CyberText scoreText;
     public GameObject resultPanel;
     public Text resultScoreText;
 
     [Header("エフェクト設定")]
-    public GameObject hitEffectPrefab;  // ヒット時のエフェクト
-    public GameObject popupTextPrefab;  // ダメージポップアップ
+    public GameObject effectSingle;
+    public GameObject effectDouble;
+    public GameObject effectTriple;
+    public GameObject effectBull;
+    public GameObject effectMiss;
+    public GameObject popupTextPrefab;
 
     [Header("オーディオ設定")]
     public AudioClip seSingle;
@@ -49,15 +50,13 @@ public class GameManager : MonoBehaviour
     public AudioClip seOuterBull;
     public AudioClip seInnerBull;
     public AudioClip seWin;
-    public AudioClip seFail; // バースト/失敗時
-    public AudioClip seMiss; // 的外
+    public AudioClip seFail;
+    public AudioClip seMiss;
     public AudioClip seResult;
     public AudioClip bgmMain;
 
-    // 音量調整 (AudioManagerがない場合の初期値)
     [Range(0f, 1f)] public float baseBgmVolume = 0.5f;
 
-    // 内部変数
     AudioSource audioSourceSE;
     AudioSource audioSourceBGM;
 
@@ -66,9 +65,8 @@ public class GameManager : MonoBehaviour
     int throwsLeft;
     int totalGameScore;
     bool isGameActive;
-    bool isInputBlocked; // 演出中などで操作をブロックするフラグ
+    bool isInputBlocked;
 
-    // 外部から投擲可能か確認するプロパティ
     public bool CanThrow
     {
         get { return isGameActive && !isInputBlocked; }
@@ -76,48 +74,39 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // AudioSourceを追加
         audioSourceSE = gameObject.AddComponent<AudioSource>();
         audioSourceBGM = gameObject.AddComponent<AudioSource>();
 
-        // BGM再生（AudioManager経由）
         if (AudioManager.instance != null && bgmMain != null)
         {
             AudioManager.instance.PlayBGM(bgmMain);
         }
 
-        // 音量初期化
         SyncVolume();
 
-        // ゲームステート初期化
         if (resultPanel != null) resultPanel.SetActive(false);
         totalGameScore = 0;
         currentTime = timeLimit;
         isGameActive = true;
         isInputBlocked = false;
 
-        // 最初の出題
         NextQuestion();
     }
 
     void Update()
     {
-        // 音量設定を常に同期
         SyncVolume();
 
         if (isGameActive)
         {
-            // 時間計測
             currentTime -= Time.deltaTime;
 
-            // UI更新
             if (timeText != null) timeText.text = "TIME " + currentTime.ToString("F1");
 
             if (timeSlider != null)
             {
                 float ratio = currentTime / timeLimit;
                 timeSlider.value = ratio;
-                // 残り時間でゲージの色を変える
                 if (timeSlider.fillRect != null)
                 {
                     Image fillImage = timeSlider.fillRect.GetComponent<Image>();
@@ -130,7 +119,6 @@ public class GameManager : MonoBehaviour
                 }
             }
 
-            // タイムアップ判定
             if (currentTime <= 0)
             {
                 currentTime = 0;
@@ -139,7 +127,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // AudioManagerの音量を反映
     void SyncVolume()
     {
         float targetBGM = baseBgmVolume;
@@ -153,7 +140,6 @@ public class GameManager : MonoBehaviour
         if (audioSourceSE != null) audioSourceSE.volume = targetSE;
     }
 
-    // 次の問題を設定
     public void NextQuestion()
     {
         currentTargetScore = questionList[Random.Range(0, questionList.Length)];
@@ -162,107 +148,138 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
-    // ----------------------------------------------------------------
-    // ヒット処理メインロジック
-    // ----------------------------------------------------------------
     public void ProcessHit(string areaCode, int hitScore, Vector2 hitPosition)
     {
         if (!isGameActive || isInputBlocked) return;
-        isInputBlocked = true; // 連続ヒット防止
+        isInputBlocked = true;
 
         throwsLeft--;
         UpdateUI();
 
-        // 1. OUT（的の外）の判定
+        Vector3 effectPos = new Vector3(hitPosition.x, hitPosition.y, -0.5f);
+
+        // ==========================================================
+        // OUT判定（MISS処理）
+        // ==========================================================
         if (areaCode == "OUT")
         {
-            // ヒット音は鳴らさず、カザキリ音のみ再生
-            StartCoroutine(FailProcessRoutine("MISS", 0f, seMiss));
+            // Miss演出用コルーチンを開始
+            StartCoroutine(MissProcessRoutine(effectPos));
             return;
         }
 
-        // 2. ヒット演出生成
-        if (hitEffectPrefab) Instantiate(hitEffectPrefab, hitPosition, Quaternion.identity);
+        // ヒットエフェクト
+        PlayHitEffect(areaCode, effectPos);
+
         if (popupTextPrefab)
         {
-            GameObject popup = Instantiate(popupTextPrefab, hitPosition, Quaternion.identity);
+            GameObject popup = Instantiate(popupTextPrefab, effectPos, Quaternion.identity);
             popup.transform.position = new Vector3(hitPosition.x, hitPosition.y, -3.0f);
         }
 
-        // カメラシェイク（強い役なら大きく揺らす）
         if (CameraShake.instance)
         {
             if (areaCode.StartsWith("T") || areaCode.Contains("Bull")) CameraShake.instance.Shake(0.2f, 0.1f);
             else CameraShake.instance.Shake(0.1f, 0.05f);
         }
 
-        // 3. スコア計算
         int tempScore = currentTargetScore - hitScore;
 
         if (tempScore < 0)
         {
-            // === バースト（0を下回った） ===
-
-            // バースト演出（赤フラッシュ等）を実行
             if (GameEffectsManager.instance != null)
             {
                 GameEffectsManager.instance.PlayBustEffect();
             }
-
-            // ヒット音は鳴らさず、即座に失敗音を再生
             StartCoroutine(FailProcessRoutine("BUST", 0f, seFail));
         }
         else if (tempScore == 0)
         {
-            // === 勝利（ぴったり0） ===
-
-            // フィニッシュ演出（スローモーション）を実行
             if (GameEffectsManager.instance != null)
             {
                 GameEffectsManager.instance.PlayFinishEffect();
             }
 
-            // カメラをヒット位置へズーム
             if (CameraController.instance != null)
             {
                 CameraController.instance.ZoomIn(new Vector3(hitPosition.x, hitPosition.y, 0), winningZoomSize, 0.05f);
             }
 
-            // ヒット音を鳴らしてから勝利処理へ
             PlayHitSound(areaCode);
             WinProcess(areaCode);
         }
         else
         {
-            // === 継続 ===
             currentTargetScore = tempScore;
             UpdateUI();
 
-            // ヒット音を再生し、演出にかかる時間を取得
             float soundDuration = PlayHitSound(areaCode);
 
             if (throwsLeft <= 0)
             {
-                // 残り回数切れ（ターン終了）
-                // 音の再生が終わるのを待ってから失敗処理へ
                 StartCoroutine(FailProcessRoutine("TURN END", soundDuration, seFail));
             }
             else
             {
-                // 次の投擲へ（クールダウン）
                 StartCoroutine(CooldownRoutine(throwCooldown));
             }
         }
     }
 
-    // 勝利処理
+    // MISS演出の制御用コルーチン（新規追加）
+    IEnumerator MissProcessRoutine(Vector3 effectPos)
+    {
+        // エフェクト生成
+        if (effectMiss != null) Instantiate(effectMiss, effectPos, Quaternion.identity);
+
+        // 音とテキスト
+        if (seMiss != null) audioSourceSE.PlayOneShot(seMiss);
+        if (targetText != null) targetText.SetText("MISS");
+
+        // 0.5秒間MISSを表示する（待機）
+        yield return new WaitForSeconds(0.4f);
+
+        // 弾切れチェック
+        if (throwsLeft <= 0)
+        {
+            // ターン終了へ移行
+            StartCoroutine(FailProcessRoutine("TURN END", 0f, seFail));
+        }
+        else
+        {
+            // まだ続くなら、テキストをターゲット数値に戻す
+            UpdateUI();
+            isInputBlocked = false;
+        }
+    }
+
+    void PlayHitEffect(string areaCode, Vector3 pos)
+    {
+        GameObject prefabToSpawn = effectSingle;
+
+        if (areaCode.StartsWith("D")) prefabToSpawn = effectDouble;
+        else if (areaCode.StartsWith("T")) prefabToSpawn = effectTriple;
+        else if (areaCode.Contains("Bull")) prefabToSpawn = effectBull;
+
+        if (prefabToSpawn != null)
+        {
+            Instantiate(prefabToSpawn, pos, Quaternion.identity);
+        }
+    }
+
     void WinProcess(string finishingArea)
     {
-        // フィニッシュエリアに応じた加点
-        int pointsGet = (finishingArea.StartsWith("S") || finishingArea == "Outer Bull") ? 1 : 3;
+        int pointsGet = 1;
+        string winMessage = "WIN!!";
+
+        if (finishingArea.StartsWith("D") || finishingArea.StartsWith("T") || finishingArea.Contains("Bull"))
+        {
+            pointsGet = 3;
+            winMessage = "GREAT WIN!!";
+        }
+
         totalGameScore += pointsGet;
 
-        // エフェクトマネージャーがない場合の保険（カメラズーム）
         if (CameraController.instance != null && GameEffectsManager.instance == null)
         {
             CameraController.instance.ZoomIn(Vector3.zero, winningZoomSize, 0.2f);
@@ -270,31 +287,24 @@ public class GameManager : MonoBehaviour
 
         if (BloomManager.instance != null) BloomManager.instance.FlashBloom(pointsGet);
 
-        // ファンファーレとテキスト表示
         if (seWin) audioSourceSE.PlayOneShot(seWin);
 
-        // CyberTextで更新
-        if (targetText != null) targetText.SetText("WIN!!");
+        if (targetText != null) targetText.SetText(winMessage);
 
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
-    // 失敗・バースト・ミス処理用コルーチン
-    // delay: 再生待ち時間
-    // clip: 再生するSE
     IEnumerator FailProcessRoutine(string reason, float delay, AudioClip clip)
     {
         if (delay > 0) yield return new WaitForSeconds(delay);
 
         if (clip != null) audioSourceSE.PlayOneShot(clip);
 
-        // CyberTextで更新
         if (targetText != null) targetText.SetText(reason);
 
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
-    // タイムアップ処理
     void GameOver()
     {
         isGameActive = false;
@@ -302,11 +312,10 @@ public class GameManager : MonoBehaviour
         if (resultPanel != null)
         {
             resultPanel.SetActive(true);
-            AnimateResultScore(); // スコア演出開始
+            AnimateResultScore();
         }
     }
 
-    // リザルト画面のスコア演出
     void AnimateResultScore()
     {
         if (resultScoreText == null) return;
@@ -319,7 +328,6 @@ public class GameManager : MonoBehaviour
             .OnComplete(() =>
             {
                 if (seResult) audioSourceSE.PlayOneShot(seResult);
-                // 完了時に拡大演出
                 if (resultScoreText != null)
                 {
                     resultScoreText.transform.DOScale(1.2f, 0.1f).SetLoops(2, LoopType.Yoyo).SetLink(resultScoreText.gameObject);
@@ -332,14 +340,12 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // 投擲間隔のクールダウン
     IEnumerator CooldownRoutine(float duration)
     {
         yield return new WaitForSeconds(duration);
         if (isGameActive) isInputBlocked = false;
     }
 
-    // 次の問題までの待機
     IEnumerator NextQuestionDelayRoutine(float duration)
     {
         yield return new WaitForSeconds(duration);
@@ -347,20 +353,17 @@ public class GameManager : MonoBehaviour
         if (isGameActive) NextQuestion();
     }
 
-    // 連続音再生（トリプルヒット時など）
     IEnumerator PlaySoundRoutine(AudioClip clip, int count)
     {
         if (clip == null) yield break;
         for (int i = 0; i < count; i++)
         {
-            audioSourceSE.pitch = Random.Range(0.95f, 1.05f); // ピッチを揺らす
+            audioSourceSE.pitch = Random.Range(0.95f, 1.05f);
             audioSourceSE.PlayOneShot(clip);
             yield return new WaitForSeconds(0.08f);
         }
     }
 
-    // ヒット音再生処理
-    // 戻り値: 演出完了までの予想時間(秒)
     float PlayHitSound(string areaCode)
     {
         AudioClip clipToPlay = seSingle;
@@ -368,7 +371,6 @@ public class GameManager : MonoBehaviour
 
         if (areaCode == "OUT") return 0f;
 
-        // エリアコードに応じたSE選択
         if (areaCode.StartsWith("D"))
         {
             clipToPlay = seDouble;
@@ -391,18 +393,14 @@ public class GameManager : MonoBehaviour
 
         StartCoroutine(PlaySoundRoutine(clipToPlay, repeatCount));
 
-        // 演出時間を計算して返す
         return (repeatCount * 0.08f) + 0.1f;
     }
 
-    // UI更新
     void UpdateUI()
     {
-        // CyberTextで更新（グリッチあり）
         if (targetText != null) targetText.SetValue("TARGET: ", currentTargetScore);
         if (scoreText != null) scoreText.SetValue("SCORE: ", totalGameScore);
 
-        // 残り投擲アイコンの表示制御
         if (throwIcons != null)
         {
             for (int i = 0; i < throwIcons.Length; i++)
