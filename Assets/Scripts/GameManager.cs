@@ -28,11 +28,13 @@ public class GameManager : MonoBehaviour
     int[] questionList = { 32, 40, 50, 60, 36, 20, 16, 81, 101 };
 
     [Header("UI参照")]
-    public Text targetText;
+    // CyberTextに変更
+    public CyberText targetText;
     public Text timeText;
     public Slider timeSlider;
     public GameObject[] throwIcons;
-    public Text scoreText;
+    // CyberTextに変更
+    public CyberText scoreText;
     public GameObject resultPanel;
     public Text resultScoreText;
 
@@ -270,7 +272,9 @@ public class GameManager : MonoBehaviour
 
         // ファンファーレとテキスト表示
         if (seWin) audioSourceSE.PlayOneShot(seWin);
-        if (targetText != null) targetText.text = "WIN!!";
+
+        // CyberTextで更新
+        if (targetText != null) targetText.SetText("WIN!!");
 
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
@@ -283,7 +287,9 @@ public class GameManager : MonoBehaviour
         if (delay > 0) yield return new WaitForSeconds(delay);
 
         if (clip != null) audioSourceSE.PlayOneShot(clip);
-        if (targetText != null) targetText.text = reason;
+
+        // CyberTextで更新
+        if (targetText != null) targetText.SetText(reason);
 
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
@@ -392,8 +398,9 @@ public class GameManager : MonoBehaviour
     // UI更新
     void UpdateUI()
     {
-        if (targetText != null) targetText.text = "TARGET: " + currentTargetScore.ToString();
-        if (scoreText != null) scoreText.text = "SCORE: " + totalGameScore.ToString();
+        // CyberTextで更新（グリッチあり）
+        if (targetText != null) targetText.SetValue("TARGET: ", currentTargetScore);
+        if (scoreText != null) scoreText.SetValue("SCORE: ", totalGameScore);
 
         // 残り投擲アイコンの表示制御
         if (throwIcons != null)
