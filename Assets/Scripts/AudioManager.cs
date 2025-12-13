@@ -8,18 +8,25 @@ public class AudioManager : MonoBehaviour
     [Range(0f, 1f)] public float bgmVolume = 0.5f;
     [Range(0f, 1f)] public float seVolume = 0.5f;
 
-    // 保存用の鍵（キー）
+    // 実際に音を鳴らすスピーカーコンポーネント
+    private AudioSource bgmSource;
+
+    // 保存用の鍵
     const string KEY_BGM = "CFG_BGM_VOL";
     const string KEY_SE = "CFG_SE_VOL";
 
     void Awake()
     {
-        // シングルトン化
         if (instance == null)
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
-            LoadVolume(); // 起動時に保存データを読み込む
+
+            // BGM用のスピーカーを自動で取り付ける
+            bgmSource = gameObject.AddComponent<AudioSource>();
+            bgmSource.loop = true;
+
+            LoadVolume();
         }
         else
         {
@@ -27,7 +34,32 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // スライダーから呼ばれる関数
+    void Update()
+    {
+        // 常に音量を反映させる
+        if (bgmSource != null)
+        {
+            bgmSource.volume = bgmVolume;
+        }
+    }
+
+    // ★重要：外部からBGM再生を依頼する関数
+    public void PlayBGM(AudioClip clip)
+    {
+        if (clip == null) return;
+
+        // もし「今流れている曲」と「これから流す曲」が同じなら、何もしない
+        // これにより、シーン遷移しても曲が途切れない！
+        if (bgmSource.clip == clip && bgmSource.isPlaying)
+        {
+            return;
+        }
+
+        // 違う曲なら再生する
+        bgmSource.clip = clip;
+        bgmSource.Play();
+    }
+
     public void SetBgmVolume(float volume)
     {
         bgmVolume = volume;
@@ -44,7 +76,6 @@ public class AudioManager : MonoBehaviour
 
     void LoadVolume()
     {
-        // データがあれば読み込む、なければデフォルト(0.5)
         bgmVolume = PlayerPrefs.GetFloat(KEY_BGM, 0.5f);
         seVolume = PlayerPrefs.GetFloat(KEY_SE, 0.5f);
     }
