@@ -1268,7 +1268,7 @@ MonoBehaviour:
   seDecide: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
   seSlam: {fileID: 0}
   slashAngle: 15
-  closeSpeed: 3
+  closeSpeed: 1
   shakePower: 50
 --- !u!4 &236290324
 Transform:
@@ -10863,12 +10863,12 @@ MonoBehaviour:
   hitEffectPrefab: {fileID: 0}
   popupTextPrefab: {fileID: 0}
   seSingle: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
-  seDouble: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
-  seTriple: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
+  seDouble: {fileID: 8300000, guid: 1924e6b6ac615764e99dd7506aab10b6, type: 3}
+  seTriple: {fileID: 8300000, guid: 1924e6b6ac615764e99dd7506aab10b6, type: 3}
   seOuterBull: {fileID: 8300000, guid: 88f42ee35d152064ea0a3c4e9c0a18e7, type: 3}
   seInnerBull: {fileID: 8300000, guid: 88f42ee35d152064ea0a3c4e9c0a18e7, type: 3}
   seWin: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
-  seFail: {fileID: 0}
+  seFail: {fileID: 8300000, guid: 59d8fdf2e1d8c384280b81f28fc97a65, type: 3}
   seMiss: {fileID: 0}
   seResult: {fileID: 0}
   bgmMain: {fileID: 8300000, guid: 14d94bbbcb6c59345ad45dfb59cb9e54, type: 3}
