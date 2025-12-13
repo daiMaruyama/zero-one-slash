@@ -9,7 +9,7 @@ public class AudioManager : MonoBehaviour
     [Range(0f, 1f)] public float seVolume = 0.5f;
 
     // 実際に音を鳴らすスピーカーコンポーネント
-    private AudioSource bgmSource;
+    AudioSource bgmSource;
 
     // 保存用の鍵
     const string KEY_BGM = "CFG_BGM_VOL";
@@ -43,7 +43,7 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // ★重要：外部からBGM再生を依頼する関数
+    // 外部からBGM再生を依頼する関数
     public void PlayBGM(AudioClip clip)
     {
         if (clip == null) return;
