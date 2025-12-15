@@ -2,6 +2,7 @@
 using DG.Tweening;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 public class TitleController : MonoBehaviour
 {
@@ -24,14 +25,14 @@ public class TitleController : MonoBehaviour
     public float shakePower = 50f;
 
     // 自動生成変数
-    private RectTransform gateTop;
-    private RectTransform gateBottom;
-    private CanvasGroup flashPanel;
-    private RectTransform shakeTarget;
+    RectTransform gateTop;
+    RectTransform gateBottom;
+    CanvasGroup flashPanel;
+    RectTransform shakeTarget;
 
-    private AudioSource audioSource;
-    private Vector2 endPosTop, endPosBottom;
-    private bool isTransitioning = false;
+    AudioSource audioSource;
+    Vector2 endPosTop, endPosBottom;
+    bool isTransitioning = false;
 
     void Start()
     {
@@ -67,8 +68,19 @@ public class TitleController : MonoBehaviour
 
     void Update()
     {
-        if (!isTransitioning && Input.GetMouseButtonDown(0))
+        // すでに遷移中なら何もしない
+        if (isTransitioning) return;
+
+        // クリック（タップ）されたら
+        if (Input.GetMouseButtonDown(0))
         {
+            // もしクリックした場所にUI（ボタンなど）があったら、ここで中断！
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
+            // UIじゃなければ、ゲーム開始演出へ
             StartGateTransition();
         }
     }
