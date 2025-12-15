@@ -6,9 +6,7 @@ using DG.Tweening;
 
 public class GameManager : MonoBehaviour
 {
-    // =================================================
     // 設定項目
-    // =================================================
     [Header("ゲームバランス設定")]
     [Tooltip("制限時間（秒）")]
     [SerializeField] float timeLimit = 60.0f;
@@ -107,6 +105,8 @@ public class GameManager : MonoBehaviour
             {
                 float ratio = currentTime / timeLimit;
                 timeSlider.value = ratio;
+
+                // 残り時間に応じてゲージの色を変更
                 if (timeSlider.fillRect != null)
                 {
                     Image fillImage = timeSlider.fillRect.GetComponent<Image>();
@@ -127,6 +127,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // 音量設定を反映
     void SyncVolume()
     {
         float targetBGM = baseBgmVolume;
@@ -140,6 +141,7 @@ public class GameManager : MonoBehaviour
         if (audioSourceSE != null) audioSourceSE.volume = targetSE;
     }
 
+    // 次の問題を設定
     public void NextQuestion()
     {
         currentTargetScore = questionList[Random.Range(0, questionList.Length)];
@@ -148,6 +150,7 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
+    // ダーツが当たった時のメイン処理
     public void ProcessHit(string areaCode, int hitScore, Vector2 hitPosition)
     {
         if (!isGameActive || isInputBlocked) return;
@@ -156,27 +159,27 @@ public class GameManager : MonoBehaviour
         throwsLeft--;
         UpdateUI();
 
+        // エフェクトの生成位置（ボードに埋まらないよう手前にずらす）
         Vector3 effectPos = new Vector3(hitPosition.x, hitPosition.y, -0.5f);
 
-        // ==========================================================
-        // OUT判定（MISS処理）
-        // ==========================================================
+        // OUT判定（MISS）
         if (areaCode == "OUT")
         {
-            // Miss演出用コルーチンを開始
             StartCoroutine(MissProcessRoutine(effectPos));
             return;
         }
 
-        // ヒットエフェクト
+        // ヒットエフェクト再生
         PlayHitEffect(areaCode, effectPos);
 
+        // ダメージポップアップ
         if (popupTextPrefab)
         {
             GameObject popup = Instantiate(popupTextPrefab, effectPos, Quaternion.identity);
             popup.transform.position = new Vector3(hitPosition.x, hitPosition.y, -3.0f);
         }
 
+        // カメラシェイク
         if (CameraShake.instance)
         {
             if (areaCode.StartsWith("T") || areaCode.Contains("Bull")) CameraShake.instance.Shake(0.2f, 0.1f);
@@ -187,6 +190,11 @@ public class GameManager : MonoBehaviour
 
         if (tempScore < 0)
         {
+            // バースト処理
+
+            // 重複再生を防ぐため、現在鳴っているSEを停止
+            audioSourceSE.Stop();
+
             if (GameEffectsManager.instance != null)
             {
                 GameEffectsManager.instance.PlayBustEffect();
@@ -195,6 +203,7 @@ public class GameManager : MonoBehaviour
         }
         else if (tempScore == 0)
         {
+            // 勝利処理
             if (GameEffectsManager.instance != null)
             {
                 GameEffectsManager.instance.PlayFinishEffect();
@@ -210,6 +219,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            // 継続処理
             currentTargetScore = tempScore;
             UpdateUI();
 
@@ -226,33 +236,29 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // MISS演出の制御用コルーチン（新規追加）
+    // MISS時の演出処理
     IEnumerator MissProcessRoutine(Vector3 effectPos)
     {
-        // エフェクト生成
         if (effectMiss != null) Instantiate(effectMiss, effectPos, Quaternion.identity);
 
-        // 音とテキスト
         if (seMiss != null) audioSourceSE.PlayOneShot(seMiss);
         if (targetText != null) targetText.SetText("MISS");
 
-        // 0.5秒間MISSを表示する（待機）
         yield return new WaitForSeconds(0.4f);
 
-        // 弾切れチェック
+        // 弾切れならターン終了、残っていれば復帰
         if (throwsLeft <= 0)
         {
-            // ターン終了へ移行
             StartCoroutine(FailProcessRoutine("TURN END", 0f, seFail));
         }
         else
         {
-            // まだ続くなら、テキストをターゲット数値に戻す
             UpdateUI();
             isInputBlocked = false;
         }
     }
 
+    // エフェクトの出し分け
     void PlayHitEffect(string areaCode, Vector3 pos)
     {
         GameObject prefabToSpawn = effectSingle;
@@ -267,11 +273,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // 勝利時の処理
     void WinProcess(string finishingArea)
     {
         int pointsGet = 1;
         string winMessage = "WIN!!";
 
+        // 上がり方によるボーナス判定
         if (finishingArea.StartsWith("D") || finishingArea.StartsWith("T") || finishingArea.Contains("Bull"))
         {
             pointsGet = 3;
@@ -294,6 +302,7 @@ public class GameManager : MonoBehaviour
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
+    // 失敗演出（バースト、ターン終了）
     IEnumerator FailProcessRoutine(string reason, float delay, AudioClip clip)
     {
         if (delay > 0) yield return new WaitForSeconds(delay);
@@ -305,6 +314,7 @@ public class GameManager : MonoBehaviour
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
+    // ゲームオーバー（タイムアップ）処理
     void GameOver()
     {
         isGameActive = false;
@@ -316,6 +326,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // リザルト画面のスコア演出
     void AnimateResultScore()
     {
         if (resultScoreText == null) return;
@@ -353,6 +364,7 @@ public class GameManager : MonoBehaviour
         if (isGameActive) NextQuestion();
     }
 
+    // SEの連続再生（トリプルなど）
     IEnumerator PlaySoundRoutine(AudioClip clip, int count)
     {
         if (clip == null) yield break;
@@ -364,6 +376,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // エリアに応じたヒット音の再生
     float PlayHitSound(string areaCode)
     {
         AudioClip clipToPlay = seSingle;
@@ -396,6 +409,7 @@ public class GameManager : MonoBehaviour
         return (repeatCount * 0.08f) + 0.1f;
     }
 
+    // UIの表示更新
     void UpdateUI()
     {
         if (targetText != null) targetText.SetValue("TARGET: ", currentTargetScore);
