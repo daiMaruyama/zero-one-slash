@@ -8635,10 +8635,11 @@ MonoBehaviour:
   missRadius: 3.4
   cardPrefab: {fileID: 5692719674400806139, guid: f9626b60d09e4f54caf00ba5b633e972, type: 3}
   highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  innerBullHighlightColor: {r: 1, g: 0, b: 0, a: 1}
+  innerBullHighlightColor: {r: 1, g: 0.26226407, b: 0.812635, a: 1}
   outerBullHighlightColor: {r: 1, g: 0.5, b: 0, a: 1}
   highlightArcWidth: 17
   dimmerIntensity: 0.64
+  heavyDimmerIntensity: 0.75
 --- !u!1 &1443524803
 GameObject:
   m_ObjectHideFlags: 0

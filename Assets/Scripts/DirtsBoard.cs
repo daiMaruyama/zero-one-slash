@@ -20,12 +20,13 @@ public class DartsBoard : MonoBehaviour
 
     [Header("ハイライト色")]
     public Color highlightColor = Color.yellow;
-    public Color innerBullHighlightColor = new Color(1f, 0.0f, 0.2f);
-    public Color outerBullHighlightColor = new Color(1f, 0.3f, 0.0f);
+    public Color innerBullHighlightColor = new Color(1f, 0.0f, 0.2f); // 赤系
+    public Color outerBullHighlightColor = new Color(1f, 0.3f, 0.0f); // オレンジ系
 
     [Header("ハイライト調整")]
-    [Range(10f, 18f)] public float highlightArcWidth = 16.0f; // 18度より少し狭くしてワイヤー被りを防ぐ
+    [Range(10f, 18f)] public float highlightArcWidth = 16.0f;
     [Range(0f, 1f)] public float dimmerIntensity = 0.5f;
+    [Range(0f, 1f)] public float heavyDimmerIntensity = 0.75f; // インブル用の強い暗転
 
     private GameObject dimmerObject;
 
@@ -39,8 +40,8 @@ public class DartsBoard : MonoBehaviour
 
         // 演出用
         public bool shouldHighlight;
-        public bool isRipple;       // 波紋モードか？
-        public bool isDoubleRipple; // インナーブル用
+        public bool isRipple;        // 波紋モードか？
+        public bool isInnerBull;     // インブル判定用に追加
 
         public float hlInner;
         public float hlOuter;
@@ -139,25 +140,27 @@ public class DartsBoard : MonoBehaviour
 
         if (distance < bullRadius)
         {
-            // Inner Bull (波紋 x2)
+            // Inner Bull (重い演出)
             res.areaCode = "Inner Bull";
             res.score = 50;
             res.shouldHighlight = true;
             res.isRipple = true;
-            res.isDoubleRipple = true;
-            // 波紋なので画面端まで広げる
+            res.isInnerBull = true;
+
+            // 修正: 半径をダブルアウターまでに変更
             res.hlOuter = doubleOuter;
             res.hlColor = innerBullHighlightColor;
         }
         else if (distance < outerBullRadius)
         {
-            // Outer Bull (波紋 x1)
+            // Outer Bull (通常波紋)
             res.areaCode = "Outer Bull";
             res.score = 25;
             res.shouldHighlight = true;
             res.isRipple = true;
-            res.isDoubleRipple = false;
-            // 波紋なので画面端まで広げる
+            res.isInnerBull = false;
+
+            // 修正: 半径をダブルアウターまでに変更
             res.hlOuter = doubleOuter;
             res.hlColor = outerBullHighlightColor;
         }
@@ -169,7 +172,6 @@ public class DartsBoard : MonoBehaviour
             res.shouldHighlight = true;
             res.isRipple = false;
 
-            // 厳密な半径を使用
             res.hlInner = tripleInner;
             res.hlOuter = tripleOuter;
             res.hlCenterAngle = 90f - (index * 18f);
@@ -184,7 +186,6 @@ public class DartsBoard : MonoBehaviour
             res.shouldHighlight = true;
             res.isRipple = false;
 
-            // 厳密な半径を使用
             res.hlInner = doubleInner;
             res.hlOuter = doubleOuter;
             res.hlCenterAngle = 90f - (index * 18f);
@@ -204,9 +205,12 @@ public class DartsBoard : MonoBehaviour
 
     void SpawnHighlight(HitResult res)
     {
-        if (dimmerIntensity > 0)
+        // インブルかどうかで暗転の強さを変える
+        float targetIntensity = res.isInnerBull ? heavyDimmerIntensity : dimmerIntensity;
+
+        if (targetIntensity > 0)
         {
-            StartCoroutine(FlashDimmer());
+            StartCoroutine(FlashDimmer(targetIntensity));
         }
 
         if (res.isRipple)
@@ -214,16 +218,16 @@ public class DartsBoard : MonoBehaviour
             // 波紋モード
             float rippleRadius = res.hlOuter; // doubleOuterが入っている
 
-            if (res.isDoubleRipple)
+            if (res.isInnerBull)
             {
-                // インナーブル：2連波紋
-                StartCoroutine(SpawnDoubleRipple(rippleRadius));
+                // インブル：重厚な演出
+                StartCoroutine(SpawnHeavyBullEffect(rippleRadius));
             }
             else
             {
                 // アウターブル：単発波紋
                 float w = rippleRadius * 0.2f;
-                CreateHighlighter().RippleEffect(rippleRadius, res.hlColor, 1.0f, w);
+                CreateHighlighter().RippleEffect(rippleRadius, res.hlColor, 0.8f, w);
             }
         }
         else
@@ -246,15 +250,27 @@ public class DartsBoard : MonoBehaviour
         return hlObj.AddComponent<SegmentHighlighter>();
     }
 
-    IEnumerator SpawnDoubleRipple(float maxRadius)
+    // ダーツライブ風の重いインブル演出
+    IEnumerator SpawnHeavyBullEffect(float maxRadius)
     {
-        float w = maxRadius * 0.2f;
-        CreateHighlighter().RippleEffect(maxRadius, innerBullHighlightColor, 1.2f, w);
-        yield return new WaitForSeconds(0.15f);
-        CreateHighlighter().RippleEffect(maxRadius, innerBullHighlightColor, 1.5f, w);
+        // 1. 着弾瞬間の白い閃光 (インパクト)
+        // アウターブル半径までの一瞬の白フラッシュ
+        CreateHighlighter().FlashSegment(0, outerBullRadius, 0, 360, Color.white);
+
+        // 2. 1発目の重い波紋
+        // 幅を太く(0.4倍)、速度は少し遅くして重量感を出す
+        float heavyWidth = maxRadius * 0.4f;
+        CreateHighlighter().RippleEffect(maxRadius, innerBullHighlightColor, 0.6f, heavyWidth);
+
+        // 少し溜める (連射間隔を調整)
+        yield return new WaitForSeconds(0.12f);
+
+        // 3. 2発目の余韻波紋
+        // 1発目より少しゆっくり広がる
+        CreateHighlighter().RippleEffect(maxRadius, innerBullHighlightColor, 1.0f, heavyWidth);
     }
 
-    IEnumerator FlashDimmer()
+    IEnumerator FlashDimmer(float intensity)
     {
         if (dimmerObject == null)
         {
@@ -271,7 +287,7 @@ public class DartsBoard : MonoBehaviour
         }
 
         Material dimMat = dimmerObject.GetComponent<MeshRenderer>().material;
-        dimMat.color = new Color(0, 0, 0, dimmerIntensity);
+        dimMat.color = new Color(0, 0, 0, intensity);
 
         float duration = 0.3f;
         float elapsed = 0;
@@ -280,7 +296,8 @@ public class DartsBoard : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
-            float a = Mathf.Lerp(dimmerIntensity, 0.0f, t);
+            // 減衰カーブを少し緩やかにして暗さを少し維持する
+            float a = Mathf.Lerp(intensity, 0.0f, t * t);
             dimMat.color = new Color(0, 0, 0, a);
             yield return null;
         }

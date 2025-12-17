@@ -9,6 +9,9 @@ public class TitleController : MonoBehaviour
     [Header("必須設定")]
     public string gameSceneName = "GameScene";
 
+    [Header("UI制御")]
+    public GameObject settingsWindow;
+
     [Header("タイトルUI")]
     public RectTransform slashTop;
     public RectTransform slashBottom;
@@ -70,6 +73,12 @@ public class TitleController : MonoBehaviour
     {
         // すでに遷移中なら何もしない
         if (isTransitioning) return;
+
+        // 設定ウィンドウが開いているなら何もしない
+        if (settingsWindow != null && settingsWindow.activeSelf)
+        {
+            return;
+        }
 
         // クリック（タップ）されたら
         if (Input.GetMouseButtonDown(0))
