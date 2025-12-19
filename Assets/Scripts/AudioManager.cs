@@ -8,8 +8,9 @@ public class AudioManager : MonoBehaviour
     [Range(0f, 1f)] public float bgmVolume = 0.5f;
     [Range(0f, 1f)] public float seVolume = 0.5f;
 
-    // 実際に音を鳴らすスピーカーコンポーネント
+    // スピーカーコンポーネント
     AudioSource bgmSource;
+    AudioSource seSource; // 追加：SE用のスピーカー
 
     // 保存用の鍵
     const string KEY_BGM = "CFG_BGM_VOL";
@@ -22,9 +23,12 @@ public class AudioManager : MonoBehaviour
             instance = this;
             DontDestroyOnLoad(gameObject);
 
-            // BGM用のスピーカーを自動で取り付ける
+            // BGM用のスピーカー
             bgmSource = gameObject.AddComponent<AudioSource>();
             bgmSource.loop = true;
+
+            // SE用のスピーカーを取り付ける
+            seSource = gameObject.AddComponent<AudioSource>();
 
             LoadVolume();
         }
@@ -41,6 +45,12 @@ public class AudioManager : MonoBehaviour
         {
             bgmSource.volume = bgmVolume;
         }
+
+        // 追加：SEの音量も反映
+        if (seSource != null)
+        {
+            seSource.volume = seVolume;
+        }
     }
 
     // 外部からBGM再生を依頼する関数
@@ -48,16 +58,23 @@ public class AudioManager : MonoBehaviour
     {
         if (clip == null) return;
 
-        // もし「今流れている曲」と「これから流す曲」が同じなら、何もしない
-        // これにより、シーン遷移しても曲が途切れない！
         if (bgmSource.clip == clip && bgmSource.isPlaying)
         {
             return;
         }
 
-        // 違う曲なら再生する
         bgmSource.clip = clip;
         bgmSource.Play();
+    }
+
+    // 追加：外部からSE再生を依頼する関数
+    // これがないと GameManager から呼べません
+    public void PlaySE(AudioClip clip)
+    {
+        if (clip == null) return;
+
+        // PlayOneShotは音を重ねて鳴らせる
+        seSource.PlayOneShot(clip);
     }
 
     public void SetBgmVolume(float volume)
