@@ -11,6 +11,7 @@ public class TitleController : MonoBehaviour
 
     [Header("UI制御")]
     public GameObject settingsWindow;
+    public GameObject RankingWindow;
 
     [Header("タイトルUI")]
     public RectTransform slashTop;

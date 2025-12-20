@@ -7,31 +7,48 @@ public class TitleUIManager : MonoBehaviour
 {
     [Header("グループ参照")]
     [SerializeField] GameObject titleUIGroup;
+
+    [Header("設定ウィンドウ参照")]
     [SerializeField] GameObject settingsWindowRoot;
     [SerializeField] Transform settingsPanelContent;
-
-    [Header("ボタン参照")]
     [SerializeField] Button openSettingsButton;
     [SerializeField] Button closeSettingsButton;
+
+    // ランキングウィンドウ
+    [Header("ランキングウィンドウ参照")]
+    [SerializeField] GameObject rankingWindowRoot;
+    [SerializeField] Transform rankingPanelContent;
+    [SerializeField] Button openRankingButton;
+    [SerializeField] Button closeRankingButton;
 
     [Header("演出設定")]
     [SerializeField] float animationSpeed = 0.3f;
 
     void Start()
     {
+        // 初期化: 設定ウィンドウ
         if (settingsWindowRoot) settingsWindowRoot.SetActive(false);
         if (settingsPanelContent) settingsPanelContent.localScale = Vector3.zero;
+
+        // 初期化: ランキングウィンドウ
+        if (rankingWindowRoot) rankingWindowRoot.SetActive(false);
+        if (rankingPanelContent) rankingPanelContent.localScale = Vector3.zero;
+
         if (titleUIGroup) titleUIGroup.SetActive(true);
 
+        // ボタン登録: 設定
         if (openSettingsButton) openSettingsButton.onClick.AddListener(OnOpenSettings);
         if (closeSettingsButton) closeSettingsButton.onClick.AddListener(OnCloseSettings);
+
+        // ボタン登録: ランキング
+        if (openRankingButton) openRankingButton.onClick.AddListener(OnOpenRanking);
+        if (closeRankingButton) closeRankingButton.onClick.AddListener(OnCloseRanking);
     }
 
+    // --- 設定ウィンドウの処理 ---
     void OnOpenSettings()
     {
-        // 処理の最初で即座に選択状態を解除する
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-
         if (titleUIGroup) titleUIGroup.SetActive(false);
 
         if (settingsWindowRoot) settingsWindowRoot.SetActive(true);
@@ -44,7 +61,6 @@ public class TitleUIManager : MonoBehaviour
 
     void OnCloseSettings()
     {
-        // ここでも念のため解除（×ボタン自体のハイライト残り防止）
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
 
         if (settingsPanelContent)
@@ -64,8 +80,52 @@ public class TitleUIManager : MonoBehaviour
         }
     }
 
+    // --- ランキングウィンドウの処理 ---
+    void OnOpenRanking()
+    {
+        // 選択解除
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+
+        // タイトルUIを隠す
+        if (titleUIGroup) titleUIGroup.SetActive(false);
+
+        // ランキング表示 & アニメーション
+        if (rankingWindowRoot) rankingWindowRoot.SetActive(true);
+        if (rankingPanelContent)
+        {
+            rankingPanelContent.localScale = Vector3.zero;
+            rankingPanelContent.DOScale(1f, animationSpeed).SetEase(Ease.OutBack);
+        }
+    }
+
+    void OnCloseRanking()
+    {
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+
+        if (rankingPanelContent)
+        {
+            rankingPanelContent.DOScale(0f, animationSpeed)
+                .SetEase(Ease.InBack)
+                .OnComplete(() =>
+                {
+                    if (rankingWindowRoot) rankingWindowRoot.SetActive(false);
+                    // 設定ウィンドウが開いていなければタイトルを戻す（念の為）
+                    if (titleUIGroup && (!settingsWindowRoot || !settingsWindowRoot.activeSelf))
+                    {
+                        titleUIGroup.SetActive(true);
+                    }
+                });
+        }
+        else
+        {
+            if (rankingWindowRoot) rankingWindowRoot.SetActive(false);
+            if (titleUIGroup) titleUIGroup.SetActive(true);
+        }
+    }
+
     void OnDestroy()
     {
         if (settingsPanelContent) settingsPanelContent.DOKill();
+        if (rankingPanelContent) rankingPanelContent.DOKill();
     }
 }
