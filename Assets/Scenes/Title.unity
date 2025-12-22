@@ -1259,6 +1259,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameSceneName: Main
   settingsWindow: {fileID: 487495863}
+  RankingWindow: {fileID: 0}
   slashTop: {fileID: 1867062265}
   slashBottom: {fileID: 1348967076}
   touchText: {fileID: 1872405443}
@@ -12274,6 +12275,7 @@ GameObject:
   - component: {fileID: 1475186618}
   - component: {fileID: 1475186620}
   - component: {fileID: 1475186621}
+  - component: {fileID: 1475186622}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -12374,6 +12376,18 @@ MonoBehaviour:
   slashAngle: 15
   textOffset: {x: 0, y: 0}
   textSizeScale: 1.5
+--- !u!114 &1475186622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1475186617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b4d57c17844a764b909862c857631b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1478750850
 GameObject:
   m_ObjectHideFlags: 0
