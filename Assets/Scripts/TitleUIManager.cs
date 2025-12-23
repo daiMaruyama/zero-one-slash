@@ -80,17 +80,21 @@ public class TitleUIManager : MonoBehaviour
         }
     }
 
-    // --- ランキングウィンドウの処理 ---
+    // ランキングウィンドウの処理
     void OnOpenRanking()
     {
-        // 選択解除
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-
-        // タイトルUIを隠す
         if (titleUIGroup) titleUIGroup.SetActive(false);
 
-        // ランキング表示 & アニメーション
-        if (rankingWindowRoot) rankingWindowRoot.SetActive(true);
+        if (rankingWindowRoot)
+        {
+            rankingWindowRoot.SetActive(true);
+
+            // パネル内のコントローラーを探して最新データへの更新を命令する
+            var rankingDisplay = rankingWindowRoot.GetComponentInChildren<RankingPanelController>();
+            if (rankingDisplay != null) rankingDisplay.Refresh();
+        }
+
         if (rankingPanelContent)
         {
             rankingPanelContent.localScale = Vector3.zero;

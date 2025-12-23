@@ -353,7 +353,6 @@ public class GameManager : MonoBehaviour
             .OnUpdate(() => { if (resultScoreText != null) resultScoreText.text = "SCORE\n" + displayScore.ToString("N0"); })
             .OnComplete(() =>
             {
-                // AudioManagerでSE再生
                 if (seResult != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seResult);
 
                 if (resultScoreText != null)
@@ -362,6 +361,10 @@ public class GameManager : MonoBehaviour
                 }
 
                 CheckAndSaveHighScore();
+
+                // スコア演出終了後に名前入力と送信を許可する
+                var submissionUI = resultPanel.GetComponentInChildren<ResultPanelController>();
+                if (submissionUI != null) submissionUI.SetupSubmission(totalGameScore);
 
             }).SetLink(resultScoreText.gameObject);
     }
