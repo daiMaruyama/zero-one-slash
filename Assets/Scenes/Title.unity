@@ -1259,7 +1259,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameSceneName: Main
   settingsWindow: {fileID: 487495863}
-  RankingWindow: {fileID: 0}
+  RankingWindow: {fileID: 1478750850}
   slashTop: {fileID: 1867062265}
   slashBottom: {fileID: 1348967076}
   touchText: {fileID: 1872405443}
@@ -1291,7 +1291,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 236290322}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: baa9b4db3f519da4b9f315dece581bbd, type: 3}
   m_Name: 
