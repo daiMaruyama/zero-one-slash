@@ -162,7 +162,12 @@ public class TitleController : MonoBehaviour
                     flashPanel.DOFade(0f, 0.5f);
                 }
 
-                DOVirtual.DelayedCall(0.5f, () => SceneManager.LoadScene(gameSceneName));
+                //DOVirtual.DelayedCall(0.5f, () => SceneManager.LoadScene(gameSceneName));
+                DOVirtual.DelayedCall(0.5f, () =>
+                {
+                    DestroyDontDestroyGameManager();   // 追加
+                    SceneManager.LoadScene(gameSceneName);
+                });
             });
     }
 
@@ -239,5 +244,17 @@ public class TitleController : MonoBehaviour
         rt.pivot = pivot;
         rt.anchoredPosition = Vector2.zero;
         rt.sizeDelta = new Vector2(0, 15);
+    }
+
+    void DestroyDontDestroyGameManager()
+    {
+        // DDoL領域にいる GameManager だけ消す
+        foreach (var gm in FindObjectsOfType<GameManager>())
+        {
+            if (gm.gameObject.scene.name == "DontDestroyOnLoad")
+            {
+                Destroy(gm.gameObject);
+            }
+        }
     }
 }
