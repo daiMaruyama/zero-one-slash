@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // 修正: AudioManagerへBGM再生を依頼
+        // AudioManagerへBGM再生を依頼
         // ゲームシーン単体でのテスト時など、AudioManagerがいない場合のみ一時的に再生機能を持たせる
         if (bgmMain != null)
         {
