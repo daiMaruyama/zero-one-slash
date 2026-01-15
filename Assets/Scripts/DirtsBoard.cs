@@ -28,10 +28,29 @@ public class DartsBoard : MonoBehaviour
     [Range(0f, 1f)] public float dimmerIntensity = 0.5f;
     [Range(0f, 1f)] public float heavyDimmerIntensity = 0.75f; // インブル用の強い暗転
 
-    private GameObject dimmerObject;
+    [Header("ガイド（アンサー部分だけ浮かぶ）")]
+    [SerializeField] bool enableAnswerGuide = true;
+    [SerializeField] int guideThreshold = 60;
+    [SerializeField] Color guideColor = new Color(0.3f, 1f, 1f, 1f);
+    [SerializeField] float guideAlpha = 0.22f;
+    [SerializeField] float guideFadeIn = 0.35f;
+    [SerializeField] float guideArcWidth = 14f;
+    [SerializeField] int guideSortingOrder = 12;
+
+    GameManager _gm;
+    CheckoutAdvisor _advisor;
+
+    int _lastRemaining = -999;
+    int _lastThrows = -999;
+
+    readonly System.Collections.Generic.List<SegmentHighlighter> _guideHls = new();
+    readonly System.Collections.Generic.List<string> _guideCodes = new();
+
+
+    GameObject dimmerObject;
 
     // ヒット情報構造体
-    private struct HitResult
+    struct HitResult
     {
         public bool isValid;
         public bool isOut;
@@ -56,6 +75,7 @@ public class DartsBoard : MonoBehaviour
         {
             HandleInput();
         }
+        UpdateAnswerGuide();
     }
 
     void HandleInput()
@@ -317,5 +337,195 @@ public class DartsBoard : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, doubleOuter);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, missRadius);
+    }
+    public void HighlightAreaForFocus(string areaCode)
+    {
+        // Bull系
+        if (areaCode.Contains("Bull"))
+        {
+            var hl = CreateHighlighter();
+            hl.RippleEffect(doubleOuter, areaCode == "Inner Bull" ? innerBullHighlightColor : outerBullHighlightColor, 0.6f, doubleOuter * 0.25f);
+            return;
+        }
+
+        // S/D/T の解析
+        if (areaCode.Length < 2) return;
+
+        char ring = areaCode[0];
+        if (!int.TryParse(areaCode.Substring(1), out int baseScore)) return;
+
+        // baseScore → indexに変換（scoreMapに従う）
+        int index = -1;
+        for (int i = 0; i < scoreMap.Length; i++)
+        {
+            if (scoreMap[i] == baseScore)
+            {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) return;
+
+        float inner = 0f;
+        float outer = 0f;
+
+        if (ring == 'T')
+        {
+            inner = tripleInner;
+            outer = tripleOuter;
+        }
+        else if (ring == 'D')
+        {
+            inner = doubleInner;
+            outer = doubleOuter;
+        }
+        else
+        {
+            // シングル：見せたいなら外周の帯に寄せる（好みで）
+            inner = outerBullRadius;
+            outer = tripleInner;
+        }
+
+        float centerAngle = 90f - (index * 18f);
+
+        CreateHighlighter().FlashSegment(
+            inner,
+            outer,
+            centerAngle,
+            highlightArcWidth,
+            highlightColor
+        );
+    }
+    void UpdateAnswerGuide()
+    {
+        if (!enableAnswerGuide) return;
+
+        if (_gm == null) _gm = FindObjectOfType<GameManager>();
+        if (_advisor == null) _advisor = FindObjectOfType<CheckoutAdvisor>();
+
+        if (_gm == null || _advisor == null)
+        {
+            ClearGuideHighlights();
+            return;
+        }
+
+        // 投げられない瞬間は消す
+        if (!_gm.CanThrow)
+        {
+            ClearGuideHighlights();
+            return;
+        }
+
+        int remaining = _gm.RemainingScore;
+        int throwsLeft = _gm.ThrowsLeft;
+
+        // 60点以下だけ
+        if (remaining > guideThreshold)
+        {
+            ClearGuideHighlights();
+            return;
+        }
+
+        // 状態変わってないなら更新しない
+        if (remaining == _lastRemaining && throwsLeft == _lastThrows) return;
+        _lastRemaining = remaining;
+        _lastThrows = throwsLeft;
+
+        // 1投で上がれる場所だけ光らせる
+        var finishes = _advisor.GetOneDartFinishAreaCodes(remaining, masterOutOnly: false);
+
+        if (finishes.Count == 0)
+        {
+            // 1投で上がれないなら光らない
+            ClearGuideHighlights();
+            return;
+        }
+
+        // 上がれる場合は「その1投で上がれる場所だけ」静かに浮かぶ
+        ShowGuideHighlights(finishes);
+    }
+
+    void ClearGuideHighlights()
+    {
+        for (int i = 0; i < _guideHls.Count; i++)
+        {
+            if (_guideHls[i] != null)
+                _guideHls[i].HideGuideAndDestroy(0.12f);
+        }
+        _guideHls.Clear();
+    }
+
+    void ShowGuideHighlights(System.Collections.Generic.List<string> codes)
+    {
+        ClearGuideHighlights();
+
+        for (int i = 0; i < codes.Count; i++)
+        {
+            CreateGuideForCode(codes[i]);
+        }
+    }
+
+    void CreateGuideForCode(string areaCode)
+    {
+        // Bull
+        if (areaCode == "Inner Bull")
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(0f, bullRadius, 0f, 360f, guideColor, guideAlpha, guideFadeIn);
+            return;
+        }
+        if (areaCode == "Outer Bull")
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(bullRadius, outerBullRadius, 0f, 360f, guideColor, guideAlpha, guideFadeIn);
+            return;
+        }
+
+        // D/T/S
+        if (areaCode.Length < 2) return;
+
+        char ring = areaCode[0];
+        if (!int.TryParse(areaCode.Substring(1), out int baseScore)) return;
+
+        int index = System.Array.IndexOf(scoreMap, baseScore);
+        if (index < 0) return;
+
+        float centerAngle = 90f - (index * 18f);
+
+        if (ring == 'T')
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(tripleInner, tripleOuter, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
+            return;
+        }
+
+        if (ring == 'D')
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(doubleInner, doubleOuter, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
+            return;
+        }
+
+        if (ring == 'S')
+        {
+            // Singleは「ダブル/トリプル以外」2本の帯
+            var hl1 = CreateGuideHighlighter();
+            hl1.ShowGuide(outerBullRadius, tripleInner, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
+
+            var hl2 = CreateGuideHighlighter();
+            hl2.ShowGuide(tripleOuter, doubleInner, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
+        }
+    }
+
+    SegmentHighlighter CreateGuideHighlighter()
+    {
+        GameObject hlObj = new GameObject("AnswerGuide");
+        hlObj.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z - 0.25f);
+
+        var hl = hlObj.AddComponent<SegmentHighlighter>();
+        hl.SetSortingOrder(guideSortingOrder);
+
+        _guideHls.Add(hl);
+        return hl;
     }
 }

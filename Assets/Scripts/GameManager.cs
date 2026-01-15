@@ -6,28 +6,19 @@ using DG.Tweening;
 
 public class GameManager : MonoBehaviour
 {
-    // 設定項目
     [Header("ゲームバランス設定")]
-    [Tooltip("制限時間（秒）")]
     [SerializeField] float timeLimit = 60.0f;
-    [Tooltip("投げてから次が投げられるまでの待機時間")]
     [SerializeField] float throwCooldown = 0.3f;
-    [Tooltip("正解/失敗してから次の問題が出るまでの時間")]
     [SerializeField] float nextQuestionDelay = 1.5f;
-    [Tooltip("勝利時にカメラがズームする強さ")]
     [SerializeField] float winningZoomSize = 4.2f;
 
     [Header("演出設定")]
-    [Tooltip("リザルト画面でスコアがカウントアップする時間")]
     [SerializeField] float scoreCountDuration = 1.5f;
     [SerializeField] Ease scoreEaseType = Ease.OutExpo;
 
-    // 開始演出
     [Header("開始演出")]
     [SerializeField] AudioClip seGameStart;
-    [Tooltip("Ready/Goテキストの表示位置調整 (x, y)")]
     [SerializeField] Vector2 startTextOffset = Vector2.zero;
-    [Tooltip("Ready/Goテキストのサイズ倍率")]
     [SerializeField] float startTextScale = 1.0f;
 
     int[] questionList = { 32, 40, 50, 60, 36, 20, 16, 81, 101 };
@@ -63,7 +54,13 @@ public class GameManager : MonoBehaviour
 
     [Range(0f, 1f)] public float baseBgmVolume = 0.5f;
 
-    // 内部変数
+    [Header("ボード参照（Bullズレ対策）")]
+    [SerializeField] Transform boardTransform; // ←ダーツボードのTransformを入れる
+
+    // 外部参照用（フォーカス用）
+    public int RemainingScore => currentTargetScore;
+    public int ThrowsLeft => throwsLeft;
+
     float currentTime;
     int currentTargetScore;
     int throwsLeft;
@@ -71,24 +68,15 @@ public class GameManager : MonoBehaviour
     bool isGameActive;
     bool isInputBlocked;
 
-    public bool CanThrow
-    {
-        get { return isGameActive && !isInputBlocked; }
-    }
+    public bool CanThrow => isGameActive && !isInputBlocked;
 
     void Start()
     {
-        // AudioManagerへBGM再生を依頼
-        // ゲームシーン単体でのテスト時など、AudioManagerがいない場合のみ一時的に再生機能を持たせる
         if (bgmMain != null)
         {
-            if (AudioManager.instance != null)
-            {
-                AudioManager.instance.PlayBGM(bgmMain);
-            }
+            if (AudioManager.instance != null) AudioManager.instance.PlayBGM(bgmMain);
             else
             {
-                // AudioManager不在時のフォールバック処理
                 AudioSource tempSource = gameObject.AddComponent<AudioSource>();
                 tempSource.clip = bgmMain;
                 tempSource.loop = true;
@@ -97,11 +85,8 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // ここでUIチェックを行う
-        // UI設定が漏れていても、BGM再生後にここで止まるので音の確認は可能
         if (targetText == null) return;
 
-        // 初期化処理
         if (resultPanel != null) resultPanel.SetActive(false);
 
         totalGameScore = 0;
@@ -112,15 +97,13 @@ public class GameManager : MonoBehaviour
 
         NextQuestion();
 
-        // 演出担当スクリプトを追加
         var starter = gameObject.AddComponent<GameStarter>();
-
         starter.textOffset = startTextOffset;
         starter.textSizeScale = startTextScale;
 
         starter.Play(
-            () => {
-                // スタート音もAudioManager経由で再生
+            () =>
+            {
                 if (seGameStart != null && AudioManager.instance != null)
                     AudioManager.instance.PlaySE(seGameStart);
             },
@@ -136,10 +119,7 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // UIがない場合は動かさない
         if (targetText == null) return;
-
-        // 音量同期処理はAudioManagerに任せているため削除
 
         if (isGameActive)
         {
@@ -202,6 +182,9 @@ public class GameManager : MonoBehaviour
         {
             GameObject popup = Instantiate(popupTextPrefab, effectPos, Quaternion.identity);
             popup.transform.position = new Vector3(hitPosition.x, hitPosition.y, -3.0f);
+
+            var popupText = popup.GetComponent<HitPopupText>();
+            if (popupText != null) popupText.Setup(areaCode, hitScore);
         }
 
         if (CameraShake.instance)
@@ -214,24 +197,21 @@ public class GameManager : MonoBehaviour
 
         if (tempScore < 0)
         {
-            // AudioManagerでSE再生
-            // バーストエフェクト再生
             if (GameEffectsManager.instance != null)
-            {
                 GameEffectsManager.instance.PlayBustEffect();
-            }
+
             StartCoroutine(FailProcessRoutine("BUST", 0f, seFail));
         }
         else if (tempScore == 0)
         {
             if (GameEffectsManager.instance != null)
-            {
                 GameEffectsManager.instance.PlayFinishEffect();
-            }
 
+            // ✅ Bullズレ対策：ズーム中心を「ボード中心」に固定
             if (CameraController.instance != null)
             {
-                CameraController.instance.ZoomIn(new Vector3(hitPosition.x, hitPosition.y, 0), winningZoomSize, 0.05f);
+                Vector3 center = (boardTransform != null) ? boardTransform.position : Vector3.zero;
+                CameraController.instance.ZoomIn(center, winningZoomSize, 0.05f);
             }
 
             PlayHitSound(areaCode);
@@ -259,8 +239,8 @@ public class GameManager : MonoBehaviour
     {
         if (effectMiss != null) Instantiate(effectMiss, effectPos, Quaternion.identity);
 
-        // AudioManagerでSE再生
-        if (seMiss != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seMiss);
+        if (seMiss != null && AudioManager.instance != null)
+            AudioManager.instance.PlaySE(seMiss);
 
         if (targetText != null) targetText.SetText("MISS");
 
@@ -285,10 +265,7 @@ public class GameManager : MonoBehaviour
         else if (areaCode.StartsWith("T")) prefabToSpawn = effectTriple;
         else if (areaCode.Contains("Bull")) prefabToSpawn = effectBull;
 
-        if (prefabToSpawn != null)
-        {
-            Instantiate(prefabToSpawn, pos, Quaternion.identity);
-        }
+        if (prefabToSpawn != null) Instantiate(prefabToSpawn, pos, Quaternion.identity);
     }
 
     void WinProcess(string finishingArea)
@@ -304,15 +281,17 @@ public class GameManager : MonoBehaviour
 
         totalGameScore += pointsGet;
 
+        // ここも中心ズームなら安定
         if (CameraController.instance != null && GameEffectsManager.instance == null)
         {
-            CameraController.instance.ZoomIn(Vector3.zero, winningZoomSize, 0.2f);
+            Vector3 center = (boardTransform != null) ? boardTransform.position : Vector3.zero;
+            CameraController.instance.ZoomIn(center, winningZoomSize, 0.2f);
         }
 
         if (BloomManager.instance != null) BloomManager.instance.FlashBloom(pointsGet);
 
-        // AudioManagerでSE再生
-        if (seWin != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seWin);
+        if (seWin != null && AudioManager.instance != null)
+            AudioManager.instance.PlaySE(seWin);
 
         if (targetText != null) targetText.SetText(winMessage);
 
@@ -323,8 +302,8 @@ public class GameManager : MonoBehaviour
     {
         if (delay > 0) yield return new WaitForSeconds(delay);
 
-        // AudioManagerでSE再生
-        if (clip != null && AudioManager.instance != null) AudioManager.instance.PlaySE(clip);
+        if (clip != null && AudioManager.instance != null)
+            AudioManager.instance.PlaySE(clip);
 
         if (targetText != null) targetText.SetText(reason);
 
@@ -335,6 +314,7 @@ public class GameManager : MonoBehaviour
     {
         isGameActive = false;
         isInputBlocked = true;
+
         if (resultPanel != null)
         {
             resultPanel.SetActive(true);
@@ -345,24 +325,31 @@ public class GameManager : MonoBehaviour
     void AnimateResultScore()
     {
         if (resultScoreText == null) return;
+
         int displayScore = 0;
         resultScoreText.text = "SCORE\n0";
 
         DOTween.To(() => displayScore, x => displayScore = x, totalGameScore, scoreCountDuration)
             .SetEase(scoreEaseType)
-            .OnUpdate(() => { if (resultScoreText != null) resultScoreText.text = "SCORE\n" + displayScore.ToString("N0"); })
+            .OnUpdate(() =>
+            {
+                if (resultScoreText != null)
+                    resultScoreText.text = "SCORE\n" + displayScore.ToString("N0");
+            })
             .OnComplete(() =>
             {
-                if (seResult != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seResult);
+                if (seResult != null && AudioManager.instance != null)
+                    AudioManager.instance.PlaySE(seResult);
 
                 if (resultScoreText != null)
                 {
-                    resultScoreText.transform.DOScale(1.2f, 0.1f).SetLoops(2, LoopType.Yoyo).SetLink(resultScoreText.gameObject);
+                    resultScoreText.transform.DOScale(1.2f, 0.1f)
+                        .SetLoops(2, LoopType.Yoyo)
+                        .SetLink(resultScoreText.gameObject);
                 }
 
                 CheckAndSaveHighScore();
 
-                // スコア演出終了後に名前入力と送信を許可する
                 var submissionUI = resultPanel.GetComponentInChildren<ResultPanelController>();
                 if (submissionUI != null) submissionUI.SetupSubmission(totalGameScore);
 
@@ -407,9 +394,9 @@ public class GameManager : MonoBehaviour
     IEnumerator PlaySoundRoutine(AudioClip clip, int count)
     {
         if (clip == null) yield break;
+
         for (int i = 0; i < count; i++)
         {
-            // AudioManager経由でSEを再生
             if (AudioManager.instance != null) AudioManager.instance.PlaySE(clip);
             yield return new WaitForSeconds(0.08f);
         }
@@ -443,7 +430,6 @@ public class GameManager : MonoBehaviour
         }
 
         StartCoroutine(PlaySoundRoutine(clipToPlay, repeatCount));
-
         return (repeatCount * 0.08f) + 0.1f;
     }
 
@@ -456,8 +442,7 @@ public class GameManager : MonoBehaviour
         {
             for (int i = 0; i < throwIcons.Length; i++)
             {
-                if (i < throwsLeft) throwIcons[i].SetActive(true);
-                else throwIcons[i].SetActive(false);
+                throwIcons[i].SetActive(i < throwsLeft);
             }
         }
     }
