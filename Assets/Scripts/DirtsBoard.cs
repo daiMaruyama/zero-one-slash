@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.EventSystems;
-using System.Collections;
 
 public class DartsBoard : MonoBehaviour
 {
@@ -18,24 +19,34 @@ public class DartsBoard : MonoBehaviour
     [Header("演出設定")]
     public Card cardPrefab;
 
-    [Header("ハイライト色")]
+    [Header("ハイライト色（ヒット演出）")]
     public Color highlightColor = Color.yellow;
-    public Color innerBullHighlightColor = new Color(1f, 0.0f, 0.2f); // 赤系
-    public Color outerBullHighlightColor = new Color(1f, 0.3f, 0.0f); // オレンジ系
+    public Color innerBullHighlightColor = new Color(1f, 0.0f, 0.2f);
+    public Color outerBullHighlightColor = new Color(1f, 0.3f, 0.0f);
 
-    [Header("ハイライト調整")]
+    [Header("ハイライト調整（ヒット演出）")]
     [Range(10f, 18f)] public float highlightArcWidth = 16.0f;
     [Range(0f, 1f)] public float dimmerIntensity = 0.5f;
-    [Range(0f, 1f)] public float heavyDimmerIntensity = 0.75f; // インブル用の強い暗転
+    [Range(0f, 1f)] public float heavyDimmerIntensity = 0.75f;
 
+    // =========================
+    // ガイド（1投で上がれる場所だけ）
+    // =========================
     [Header("ガイド（アンサー部分だけ浮かぶ）")]
     [SerializeField] bool enableAnswerGuide = true;
     [SerializeField] int guideThreshold = 60;
-    [SerializeField] Color guideColor = new Color(0.3f, 1f, 1f, 1f);
-    [SerializeField] float guideAlpha = 0.22f;
+
+    [Header("ガイド色（上がり方で変える）")]
+    [SerializeField] Color guideColorSingle = new Color(0.3f, 1f, 1f, 1f);  // Single上がり（1点）
+    [SerializeField] Color guideColorPower = new Color(1f, 0.2f, 1f, 1f);   // Double/Triple上がり（3点）
+    [SerializeField] Color guideColorBull = new Color(1f, 0.6f, 0.1f, 1f);  // Bull上がり（3点）
+
+    [Header("ガイド表示調整")]
+    [SerializeField] float guideAlpha = 0.35f;        // 見えない対策で少し濃く
     [SerializeField] float guideFadeIn = 0.35f;
     [SerializeField] float guideArcWidth = 14f;
-    [SerializeField] int guideSortingOrder = 12;
+    [SerializeField] int guideSortingOrder = 200;     // 前面保証
+    [SerializeField] float guideZOffset = -0.25f;
 
     GameManager _gm;
     CheckoutAdvisor _advisor;
@@ -43,13 +54,12 @@ public class DartsBoard : MonoBehaviour
     int _lastRemaining = -999;
     int _lastThrows = -999;
 
-    readonly System.Collections.Generic.List<SegmentHighlighter> _guideHls = new();
-    readonly System.Collections.Generic.List<string> _guideCodes = new();
+    bool _prevCanThrow = false;
 
+    readonly List<SegmentHighlighter> _guideHls = new();
 
     GameObject dimmerObject;
 
-    // ヒット情報構造体
     struct HitResult
     {
         public bool isValid;
@@ -57,10 +67,9 @@ public class DartsBoard : MonoBehaviour
         public string areaCode;
         public int score;
 
-        // 演出用
         public bool shouldHighlight;
-        public bool isRipple;        // 波紋モードか？
-        public bool isInnerBull;     // インブル判定用に追加
+        public bool isRipple;
+        public bool isInnerBull;
 
         public float hlInner;
         public float hlOuter;
@@ -75,15 +84,45 @@ public class DartsBoard : MonoBehaviour
         {
             HandleInput();
         }
+
         UpdateAnswerGuide();
+    }
+
+    // =========================
+    // GM/Advisorを「同じシーンのやつ」に限定して拾う
+    // =========================
+    GameManager FindGameManagerInSameScene()
+    {
+        var gms = FindObjectsOfType<GameManager>(true);
+        for (int i = 0; i < gms.Length; i++)
+        {
+            if (gms[i] != null && gms[i].gameObject.scene == gameObject.scene)
+                return gms[i];
+        }
+        return null;
+    }
+
+    CheckoutAdvisor FindAdvisorInSameScene()
+    {
+        var advs = FindObjectsOfType<CheckoutAdvisor>(true);
+        for (int i = 0; i < advs.Length; i++)
+        {
+            if (advs[i] != null && advs[i].gameObject.scene == gameObject.scene)
+                return advs[i];
+        }
+        return null;
     }
 
     void HandleInput()
     {
-        if (EventSystem.current.IsPointerOverGameObject()) return;
-        if (Input.touchCount > 0 && EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId)) return;
+        // UIタップ無視（EventSystem無しでも落ちない）
+        if (EventSystem.current != null)
+        {
+            if (EventSystem.current.IsPointerOverGameObject()) return;
+            if (Input.touchCount > 0 && EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId)) return;
+        }
 
-        GameManager gm = FindObjectOfType<GameManager>();
+        var gm = FindGameManagerInSameScene();
         if (gm != null && !gm.CanThrow) return;
 
         Vector2 tapPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -109,7 +148,6 @@ public class DartsBoard : MonoBehaviour
         if (HitStopManager.instance) HitStopManager.instance.StopFrame(0.05f);
 
         HitResult result = CalculateHitResult(hitPos);
-
         if (!result.isValid) return;
 
         if (result.shouldHighlight)
@@ -117,7 +155,7 @@ public class DartsBoard : MonoBehaviour
             SpawnHighlight(result);
         }
 
-        GameManager gm = FindObjectOfType<GameManager>();
+        var gm = FindGameManagerInSameScene();
         if (gm != null)
         {
             gm.ProcessHit(result.areaCode, result.score, hitPos);
@@ -160,33 +198,28 @@ public class DartsBoard : MonoBehaviour
 
         if (distance < bullRadius)
         {
-            // Inner Bull (重い演出)
             res.areaCode = "Inner Bull";
             res.score = 50;
             res.shouldHighlight = true;
             res.isRipple = true;
             res.isInnerBull = true;
 
-            // 修正: 半径をダブルアウターまでに変更
             res.hlOuter = doubleOuter;
             res.hlColor = innerBullHighlightColor;
         }
         else if (distance < outerBullRadius)
         {
-            // Outer Bull (通常波紋)
             res.areaCode = "Outer Bull";
             res.score = 25;
             res.shouldHighlight = true;
             res.isRipple = true;
             res.isInnerBull = false;
 
-            // 修正: 半径をダブルアウターまでに変更
             res.hlOuter = doubleOuter;
             res.hlColor = outerBullHighlightColor;
         }
         else if (distance >= tripleInner && distance <= tripleOuter)
         {
-            // Triple (静止画)
             res.areaCode = "T" + baseScore;
             res.score = baseScore * 3;
             res.shouldHighlight = true;
@@ -200,7 +233,6 @@ public class DartsBoard : MonoBehaviour
         }
         else if (distance >= doubleInner && distance <= doubleOuter)
         {
-            // Double (静止画)
             res.areaCode = "D" + baseScore;
             res.score = baseScore * 2;
             res.shouldHighlight = true;
@@ -214,7 +246,6 @@ public class DartsBoard : MonoBehaviour
         }
         else
         {
-            // Single
             res.areaCode = "S" + baseScore;
             res.score = baseScore;
             res.shouldHighlight = false;
@@ -225,7 +256,6 @@ public class DartsBoard : MonoBehaviour
 
     void SpawnHighlight(HitResult res)
     {
-        // インブルかどうかで暗転の強さを変える
         float targetIntensity = res.isInnerBull ? heavyDimmerIntensity : dimmerIntensity;
 
         if (targetIntensity > 0)
@@ -235,24 +265,20 @@ public class DartsBoard : MonoBehaviour
 
         if (res.isRipple)
         {
-            // 波紋モード
-            float rippleRadius = res.hlOuter; // doubleOuterが入っている
+            float rippleRadius = res.hlOuter;
 
             if (res.isInnerBull)
             {
-                // インブル：重厚な演出
                 StartCoroutine(SpawnHeavyBullEffect(rippleRadius));
             }
             else
             {
-                // アウターブル：単発波紋
                 float w = rippleRadius * 0.2f;
                 CreateHighlighter().RippleEffect(rippleRadius, res.hlColor, 0.8f, w);
             }
         }
         else
         {
-            // 静止画モード
             CreateHighlighter().FlashSegment(
                 res.hlInner,
                 res.hlOuter,
@@ -270,23 +296,15 @@ public class DartsBoard : MonoBehaviour
         return hlObj.AddComponent<SegmentHighlighter>();
     }
 
-    // ダーツライブ風の重いインブル演出
     IEnumerator SpawnHeavyBullEffect(float maxRadius)
     {
-        // 1. 着弾瞬間の白い閃光 (インパクト)
-        // アウターブル半径までの一瞬の白フラッシュ
         CreateHighlighter().FlashSegment(0, outerBullRadius, 0, 360, Color.white);
 
-        // 2. 1発目の重い波紋
-        // 幅を太く(0.4倍)、速度は少し遅くして重量感を出す
         float heavyWidth = maxRadius * 0.4f;
         CreateHighlighter().RippleEffect(maxRadius, innerBullHighlightColor, 0.6f, heavyWidth);
 
-        // 少し溜める (連射間隔を調整)
         yield return new WaitForSeconds(0.12f);
 
-        // 3. 2発目の余韻波紋
-        // 1発目より少しゆっくり広がる
         CreateHighlighter().RippleEffect(maxRadius, innerBullHighlightColor, 1.0f, heavyWidth);
     }
 
@@ -316,13 +334,198 @@ public class DartsBoard : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
-            // 減衰カーブを少し緩やかにして暗さを少し維持する
             float a = Mathf.Lerp(intensity, 0.0f, t * t);
             dimMat.color = new Color(0, 0, 0, a);
             yield return null;
         }
+
         dimMat.color = Color.clear;
     }
+
+    // =========================
+    // Answer Guide
+    // =========================
+    void UpdateAnswerGuide()
+    {
+        if (!enableAnswerGuide) return;
+
+        if (_gm == null || _gm.gameObject.scene != gameObject.scene)
+            _gm = FindGameManagerInSameScene();
+
+        if (_advisor == null || _advisor.gameObject.scene != gameObject.scene)
+            _advisor = FindAdvisorInSameScene();
+
+        // もしAdvisorがシーンに無いなら、勝手に生やして動かす（これで絶対nullにならない）
+        if (_advisor == null)
+            _advisor = gameObject.AddComponent<CheckoutAdvisor>();
+
+        if (_gm == null)
+        {
+            ClearGuideHighlights();
+            _prevCanThrow = false;
+            return;
+        }
+
+        bool canThrow = _gm.CanThrow;
+
+        // 投げられない瞬間は消す
+        if (!canThrow)
+        {
+            ClearGuideHighlights();
+            _prevCanThrow = false;
+            return;
+        }
+
+        // CanThrow復帰した瞬間は強制更新
+        if (!_prevCanThrow && canThrow)
+        {
+            _lastRemaining = -999;
+            _lastThrows = -999;
+        }
+        _prevCanThrow = true;
+
+        int remaining = _gm.RemainingScore;
+        int throwsLeft = _gm.ThrowsLeft;
+
+        if (remaining > guideThreshold)
+        {
+            ClearGuideHighlights();
+            return;
+        }
+
+        // ガイドが存在する時だけ更新抑制
+        if (remaining == _lastRemaining && throwsLeft == _lastThrows && _guideHls.Count > 0)
+            return;
+
+        _lastRemaining = remaining;
+        _lastThrows = throwsLeft;
+
+        // 1投で上がれる場所だけ
+        var finishes = _advisor.GetOneDartFinishAreaCodes(remaining, masterOutOnly: false);
+
+        if (finishes == null || finishes.Count == 0)
+        {
+            ClearGuideHighlights();
+            return;
+        }
+
+        ShowGuideHighlights(finishes);
+    }
+
+    void ClearGuideHighlights()
+    {
+        for (int i = 0; i < _guideHls.Count; i++)
+        {
+            if (_guideHls[i] != null)
+                _guideHls[i].HideGuideAndDestroy(0.12f);
+        }
+        _guideHls.Clear();
+
+        _lastRemaining = -999;
+        _lastThrows = -999;
+    }
+
+    void ShowGuideHighlights(List<string> codes)
+    {
+        ClearGuideHighlights();
+
+        for (int i = 0; i < codes.Count; i++)
+        {
+            CreateGuideForCode(codes[i]);
+        }
+    }
+
+    Color GetGuideColorByAreaCode(string areaCode)
+    {
+        if (areaCode == "Inner Bull" || areaCode == "Outer Bull")
+            return guideColorBull;
+
+        if (areaCode.StartsWith("D") || areaCode.StartsWith("T"))
+            return guideColorPower;
+
+        return guideColorSingle;
+    }
+
+    void CreateGuideForCode(string areaCode)
+    {
+        Color col = GetGuideColorByAreaCode(areaCode);
+
+        // Bull
+        if (areaCode == "Inner Bull")
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(0f, bullRadius, 0f, 360f, col, guideAlpha, guideFadeIn);
+            return;
+        }
+
+        if (areaCode == "Outer Bull")
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(bullRadius, outerBullRadius, 0f, 360f, col, guideAlpha, guideFadeIn);
+            return;
+        }
+
+        if (areaCode.Length < 2) return;
+
+        char ring = areaCode[0];
+        if (!int.TryParse(areaCode.Substring(1), out int baseScore)) return;
+
+        int index = System.Array.IndexOf(scoreMap, baseScore);
+        if (index < 0) return;
+
+        float centerAngle = 90f - (index * 18f);
+
+        if (ring == 'T')
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(tripleInner, tripleOuter, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+            return;
+        }
+
+        if (ring == 'D')
+        {
+            var hl = CreateGuideHighlighter();
+            hl.ShowGuide(doubleInner, doubleOuter, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+            return;
+        }
+
+        if (ring == 'S')
+        {
+            // シングルは「ダブル/トリプル以外」2本の帯
+            var hl1 = CreateGuideHighlighter();
+            hl1.ShowGuide(outerBullRadius, tripleInner, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+
+            var hl2 = CreateGuideHighlighter();
+            hl2.ShowGuide(tripleOuter, doubleInner, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+        }
+    }
+
+    SegmentHighlighter CreateGuideHighlighter()
+    {
+        GameObject hlObj = new GameObject("AnswerGuide");
+
+        // ボードの子にする（ズレ＆スケール事故防止）
+        hlObj.transform.SetParent(transform, false);
+        hlObj.transform.localPosition = new Vector3(0, 0, -0.25f);
+
+        var hl = hlObj.AddComponent<SegmentHighlighter>();
+
+        // ここが「見えない問題」の本体
+        Renderer baseR = GetComponentInChildren<Renderer>();
+        if (baseR != null)
+        {
+            // guideSortingOrder は “加算” で使うのが安定
+            hl.SetSorting(baseR.sortingLayerName, baseR.sortingOrder + 200);
+        }
+        else
+        {
+            hl.SetSorting("Default", 200);
+        }
+
+        _guideHls.Add(hl);
+        return hl;
+    }
+
 
     void OnDrawGizmos()
     {
@@ -337,195 +540,5 @@ public class DartsBoard : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, doubleOuter);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, missRadius);
-    }
-    public void HighlightAreaForFocus(string areaCode)
-    {
-        // Bull系
-        if (areaCode.Contains("Bull"))
-        {
-            var hl = CreateHighlighter();
-            hl.RippleEffect(doubleOuter, areaCode == "Inner Bull" ? innerBullHighlightColor : outerBullHighlightColor, 0.6f, doubleOuter * 0.25f);
-            return;
-        }
-
-        // S/D/T の解析
-        if (areaCode.Length < 2) return;
-
-        char ring = areaCode[0];
-        if (!int.TryParse(areaCode.Substring(1), out int baseScore)) return;
-
-        // baseScore → indexに変換（scoreMapに従う）
-        int index = -1;
-        for (int i = 0; i < scoreMap.Length; i++)
-        {
-            if (scoreMap[i] == baseScore)
-            {
-                index = i;
-                break;
-            }
-        }
-        if (index < 0) return;
-
-        float inner = 0f;
-        float outer = 0f;
-
-        if (ring == 'T')
-        {
-            inner = tripleInner;
-            outer = tripleOuter;
-        }
-        else if (ring == 'D')
-        {
-            inner = doubleInner;
-            outer = doubleOuter;
-        }
-        else
-        {
-            // シングル：見せたいなら外周の帯に寄せる（好みで）
-            inner = outerBullRadius;
-            outer = tripleInner;
-        }
-
-        float centerAngle = 90f - (index * 18f);
-
-        CreateHighlighter().FlashSegment(
-            inner,
-            outer,
-            centerAngle,
-            highlightArcWidth,
-            highlightColor
-        );
-    }
-    void UpdateAnswerGuide()
-    {
-        if (!enableAnswerGuide) return;
-
-        if (_gm == null) _gm = FindObjectOfType<GameManager>();
-        if (_advisor == null) _advisor = FindObjectOfType<CheckoutAdvisor>();
-
-        if (_gm == null || _advisor == null)
-        {
-            ClearGuideHighlights();
-            return;
-        }
-
-        // 投げられない瞬間は消す
-        if (!_gm.CanThrow)
-        {
-            ClearGuideHighlights();
-            return;
-        }
-
-        int remaining = _gm.RemainingScore;
-        int throwsLeft = _gm.ThrowsLeft;
-
-        // 60点以下だけ
-        if (remaining > guideThreshold)
-        {
-            ClearGuideHighlights();
-            return;
-        }
-
-        // 状態変わってないなら更新しない
-        if (remaining == _lastRemaining && throwsLeft == _lastThrows) return;
-        _lastRemaining = remaining;
-        _lastThrows = throwsLeft;
-
-        // 1投で上がれる場所だけ光らせる
-        var finishes = _advisor.GetOneDartFinishAreaCodes(remaining, masterOutOnly: false);
-
-        if (finishes.Count == 0)
-        {
-            // 1投で上がれないなら光らない
-            ClearGuideHighlights();
-            return;
-        }
-
-        // 上がれる場合は「その1投で上がれる場所だけ」静かに浮かぶ
-        ShowGuideHighlights(finishes);
-    }
-
-    void ClearGuideHighlights()
-    {
-        for (int i = 0; i < _guideHls.Count; i++)
-        {
-            if (_guideHls[i] != null)
-                _guideHls[i].HideGuideAndDestroy(0.12f);
-        }
-        _guideHls.Clear();
-    }
-
-    void ShowGuideHighlights(System.Collections.Generic.List<string> codes)
-    {
-        ClearGuideHighlights();
-
-        for (int i = 0; i < codes.Count; i++)
-        {
-            CreateGuideForCode(codes[i]);
-        }
-    }
-
-    void CreateGuideForCode(string areaCode)
-    {
-        // Bull
-        if (areaCode == "Inner Bull")
-        {
-            var hl = CreateGuideHighlighter();
-            hl.ShowGuide(0f, bullRadius, 0f, 360f, guideColor, guideAlpha, guideFadeIn);
-            return;
-        }
-        if (areaCode == "Outer Bull")
-        {
-            var hl = CreateGuideHighlighter();
-            hl.ShowGuide(bullRadius, outerBullRadius, 0f, 360f, guideColor, guideAlpha, guideFadeIn);
-            return;
-        }
-
-        // D/T/S
-        if (areaCode.Length < 2) return;
-
-        char ring = areaCode[0];
-        if (!int.TryParse(areaCode.Substring(1), out int baseScore)) return;
-
-        int index = System.Array.IndexOf(scoreMap, baseScore);
-        if (index < 0) return;
-
-        float centerAngle = 90f - (index * 18f);
-
-        if (ring == 'T')
-        {
-            var hl = CreateGuideHighlighter();
-            hl.ShowGuide(tripleInner, tripleOuter, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
-            return;
-        }
-
-        if (ring == 'D')
-        {
-            var hl = CreateGuideHighlighter();
-            hl.ShowGuide(doubleInner, doubleOuter, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
-            return;
-        }
-
-        if (ring == 'S')
-        {
-            // Singleは「ダブル/トリプル以外」2本の帯
-            var hl1 = CreateGuideHighlighter();
-            hl1.ShowGuide(outerBullRadius, tripleInner, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
-
-            var hl2 = CreateGuideHighlighter();
-            hl2.ShowGuide(tripleOuter, doubleInner, centerAngle, guideArcWidth, guideColor, guideAlpha, guideFadeIn);
-        }
-    }
-
-    SegmentHighlighter CreateGuideHighlighter()
-    {
-        GameObject hlObj = new GameObject("AnswerGuide");
-        hlObj.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z - 0.25f);
-
-        var hl = hlObj.AddComponent<SegmentHighlighter>();
-        hl.SetSortingOrder(guideSortingOrder);
-
-        _guideHls.Add(hl);
-        return hl;
     }
 }
