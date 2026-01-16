@@ -1321,7 +1321,10 @@ MonoBehaviour:
   rankingPanelContent: {fileID: 0}
   openRankingButton: {fileID: 446003197}
   closeRankingButton: {fileID: 559390820}
-  animationSpeed: 0.3
+  animationDuration: 0.28
+  openStartScale: 0.92
+  openEase: 9
+  closeEase: 17
 --- !u!1 &242198000
 GameObject:
   m_ObjectHideFlags: 0
@@ -2641,7 +2644,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 403472055}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 487495866}
+        m_TargetAssemblyTypeName: SettingsPanelAnimator, Assembly-CSharp
+        m_MethodName: Open
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &403472055
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3205,6 +3220,8 @@ GameObject:
   m_Component:
   - component: {fileID: 487495864}
   - component: {fileID: 487495865}
+  - component: {fileID: 487495867}
+  - component: {fileID: 487495866}
   m_Layer: 5
   m_Name: Window_Setting
   m_TagString: Untagged
@@ -3251,6 +3268,38 @@ MonoBehaviour:
   seSlider: {fileID: 1506061200}
   closeButton: {fileID: 0}
   panelRoot: {fileID: 0}
+--- !u!114 &487495866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 487495863}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5a51e948b029b84a8d7f749c9298234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvasGroup: {fileID: 487495867}
+  panelRoot: {fileID: 487495864}
+  openDuration: 0.18
+  openEase: 27
+  openScaleFrom: 0.92
+  closeDuration: 0.05
+  closeEase: 17
+  closeScaleTo: 0.85
+--- !u!225 &487495867
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 487495863}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &489325678
 GameObject:
   m_ObjectHideFlags: 0
@@ -13137,7 +13186,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1527992010}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 487495866}
+        m_TargetAssemblyTypeName: SettingsPanelAnimator, Assembly-CSharp
+        m_MethodName: Close
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1527992010
 MonoBehaviour:
   m_ObjectHideFlags: 0
