@@ -363,7 +363,7 @@ public class DartsBoard : MonoBehaviour
         _lastRemaining = remaining;
         _lastThrows = throwsLeft;
 
-        var finishes = _advisor.GetOneDartFinishAreaCodes(remaining, masterOutOnly: false);
+        var finishes = _advisor.GetOneDartFinishAreaCodes(remaining, doubleOutOnly: false);
 
         if (finishes == null || finishes.Count == 0)
         {
