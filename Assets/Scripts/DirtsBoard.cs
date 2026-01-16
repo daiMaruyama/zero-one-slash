@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 public class DartsBoard : MonoBehaviour
 {
@@ -19,42 +20,42 @@ public class DartsBoard : MonoBehaviour
     [Header("演出設定")]
     public Card cardPrefab;
 
-    [Header("ハイライト色（ヒット演出）")]
+    [Header("ハイライト色（ヒット時演出）")]
     public Color highlightColor = Color.yellow;
     public Color innerBullHighlightColor = new Color(1f, 0.0f, 0.2f);
     public Color outerBullHighlightColor = new Color(1f, 0.3f, 0.0f);
 
-    [Header("ハイライト調整（ヒット演出）")]
+    [Header("ハイライト調整（ヒット時演出）")]
     [Range(10f, 18f)] public float highlightArcWidth = 16.0f;
     [Range(0f, 1f)] public float dimmerIntensity = 0.5f;
     [Range(0f, 1f)] public float heavyDimmerIntensity = 0.75f;
 
-    // =========================
-    // ガイド（1投で上がれる場所だけ）
-    // =========================
-    [Header("ガイド（アンサー部分だけ浮かぶ）")]
+    [Header("ガイド（1投で上がれる場所だけ浮かぶ）")]
     [SerializeField] bool enableAnswerGuide = true;
     [SerializeField] int guideThreshold = 60;
 
     [Header("ガイド色（上がり方で変える）")]
-    [SerializeField] Color guideColorSingle = new Color(0.3f, 1f, 1f, 1f);  // Single上がり（1点）
-    [SerializeField] Color guideColorPower = new Color(1f, 0.2f, 1f, 1f);   // Double/Triple上がり（3点）
-    [SerializeField] Color guideColorBull = new Color(1f, 0.6f, 0.1f, 1f);  // Bull上がり（3点）
+    [SerializeField] Color guideColorSingle = new Color(0.3f, 1f, 1f, 1f);   // Sで上がり（1点）
+    [SerializeField] Color guideColorPower = new Color(1f, 0.2f, 1f, 1f);    // D/Tで上がり（3点）
+    [SerializeField] Color guideColorBull = new Color(1f, 0.6f, 0.1f, 1f);   // Bullで上がり（3点）
 
     [Header("ガイド表示調整")]
-    [SerializeField] float guideAlpha = 0.35f;        // 見えない対策で少し濃く
+    [SerializeField] float guideAlphaSingle = 0.22f;
+    [SerializeField] float guideAlphaPower = 0.45f; // 60/57 (T20/T19) が薄すぎて見えない対策
+    [SerializeField] float guideAlphaBull = 0.35f;
+
     [SerializeField] float guideFadeIn = 0.35f;
     [SerializeField] float guideArcWidth = 14f;
-    [SerializeField] int guideSortingOrder = 200;     // 前面保証
-    [SerializeField] float guideZOffset = -0.25f;
+    [SerializeField] int guideSortingOrder = 18;
+
+    [Tooltip("ヒット演出と同じ平面に出す（ズレ根絶）。基本このままでOK")]
+    [SerializeField] float guideZOffsetFromBoard = -2.0f;
 
     GameManager _gm;
     CheckoutAdvisor _advisor;
 
     int _lastRemaining = -999;
     int _lastThrows = -999;
-
-    bool _prevCanThrow = false;
 
     readonly List<SegmentHighlighter> _guideHls = new();
 
@@ -88,42 +89,18 @@ public class DartsBoard : MonoBehaviour
         UpdateAnswerGuide();
     }
 
-    // =========================
-    // GM/Advisorを「同じシーンのやつ」に限定して拾う
-    // =========================
-    GameManager FindGameManagerInSameScene()
-    {
-        var gms = FindObjectsOfType<GameManager>(true);
-        for (int i = 0; i < gms.Length; i++)
-        {
-            if (gms[i] != null && gms[i].gameObject.scene == gameObject.scene)
-                return gms[i];
-        }
-        return null;
-    }
-
-    CheckoutAdvisor FindAdvisorInSameScene()
-    {
-        var advs = FindObjectsOfType<CheckoutAdvisor>(true);
-        for (int i = 0; i < advs.Length; i++)
-        {
-            if (advs[i] != null && advs[i].gameObject.scene == gameObject.scene)
-                return advs[i];
-        }
-        return null;
-    }
-
     void HandleInput()
     {
-        // UIタップ無視（EventSystem無しでも落ちない）
         if (EventSystem.current != null)
         {
             if (EventSystem.current.IsPointerOverGameObject()) return;
             if (Input.touchCount > 0 && EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId)) return;
         }
 
-        var gm = FindGameManagerInSameScene();
-        if (gm != null && !gm.CanThrow) return;
+        _gm = FindInSceneGameManager();
+        if (_gm != null && !_gm.CanThrow) return;
+
+        if (Camera.main == null) return;
 
         Vector2 tapPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         ThrowCard(tapPos);
@@ -155,16 +132,17 @@ public class DartsBoard : MonoBehaviour
             SpawnHighlight(result);
         }
 
-        var gm = FindGameManagerInSameScene();
-        if (gm != null)
+        _gm = FindInSceneGameManager();
+        if (_gm != null)
         {
-            gm.ProcessHit(result.areaCode, result.score, hitPos);
+            _gm.ProcessHit(result.areaCode, result.score, hitPos);
         }
     }
 
     HitResult CalculateHitResult(Vector2 tapPos)
     {
         HitResult res = new HitResult();
+
         Vector2 center = transform.position;
         float distance = Vector2.Distance(tapPos, center);
 
@@ -293,7 +271,9 @@ public class DartsBoard : MonoBehaviour
     {
         GameObject hlObj = new GameObject("Highlight");
         hlObj.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z - 2.0f);
-        return hlObj.AddComponent<SegmentHighlighter>();
+
+        var hl = hlObj.AddComponent<SegmentHighlighter>();
+        return hl;
     }
 
     IEnumerator SpawnHeavyBullEffect(float maxRadius)
@@ -343,76 +323,58 @@ public class DartsBoard : MonoBehaviour
     }
 
     // =========================
-    // Answer Guide
+    // ガイド表示（1投で上がれる場所だけ）
     // =========================
     void UpdateAnswerGuide()
     {
-        if (!enableAnswerGuide) return;
-
-        if (_gm == null || _gm.gameObject.scene != gameObject.scene)
-            _gm = FindGameManagerInSameScene();
-
-        if (_advisor == null || _advisor.gameObject.scene != gameObject.scene)
-            _advisor = FindAdvisorInSameScene();
-
-        // もしAdvisorがシーンに無いなら、勝手に生やして動かす（これで絶対nullにならない）
-        if (_advisor == null)
-            _advisor = gameObject.AddComponent<CheckoutAdvisor>();
-
-        if (_gm == null)
+        if (!enableAnswerGuide)
         {
-            ClearGuideHighlights();
-            _prevCanThrow = false;
+            ClearGuideHighlights(true);
             return;
         }
 
-        bool canThrow = _gm.CanThrow;
+        if (_gm == null) _gm = FindInSceneGameManager();
+        if (_advisor == null) _advisor = FindInSceneAdvisor();
 
-        // 投げられない瞬間は消す
-        if (!canThrow)
+        if (_gm == null || _advisor == null)
         {
-            ClearGuideHighlights();
-            _prevCanThrow = false;
+            ClearGuideHighlights(true);
             return;
         }
 
-        // CanThrow復帰した瞬間は強制更新
-        if (!_prevCanThrow && canThrow)
+        if (!_gm.CanThrow)
         {
-            _lastRemaining = -999;
-            _lastThrows = -999;
+            ClearGuideHighlights(false);
+            return;
         }
-        _prevCanThrow = true;
 
         int remaining = _gm.RemainingScore;
         int throwsLeft = _gm.ThrowsLeft;
 
         if (remaining > guideThreshold)
         {
-            ClearGuideHighlights();
+            ClearGuideHighlights(true);
             return;
         }
 
-        // ガイドが存在する時だけ更新抑制
-        if (remaining == _lastRemaining && throwsLeft == _lastThrows && _guideHls.Count > 0)
-            return;
+        // ここが重要：ガイドが消えてるのにキャッシュ一致で return すると再表示されない
+        if (remaining == _lastRemaining && throwsLeft == _lastThrows && _guideHls.Count > 0) return;
 
         _lastRemaining = remaining;
         _lastThrows = throwsLeft;
 
-        // 1投で上がれる場所だけ
         var finishes = _advisor.GetOneDartFinishAreaCodes(remaining, masterOutOnly: false);
 
         if (finishes == null || finishes.Count == 0)
         {
-            ClearGuideHighlights();
+            ClearGuideHighlights(true);
             return;
         }
 
         ShowGuideHighlights(finishes);
     }
 
-    void ClearGuideHighlights()
+    void ClearGuideHighlights(bool resetCache)
     {
         for (int i = 0; i < _guideHls.Count; i++)
         {
@@ -421,13 +383,16 @@ public class DartsBoard : MonoBehaviour
         }
         _guideHls.Clear();
 
-        _lastRemaining = -999;
-        _lastThrows = -999;
+        if (resetCache)
+        {
+            _lastRemaining = -999;
+            _lastThrows = -999;
+        }
     }
 
     void ShowGuideHighlights(List<string> codes)
     {
-        ClearGuideHighlights();
+        ClearGuideHighlights(false);
 
         for (int i = 0; i < codes.Count; i++)
         {
@@ -446,25 +411,38 @@ public class DartsBoard : MonoBehaviour
         return guideColorSingle;
     }
 
+    float GetGuideAlphaByAreaCode(string areaCode)
+    {
+        if (areaCode == "Inner Bull" || areaCode == "Outer Bull")
+            return guideAlphaBull;
+
+        if (areaCode.StartsWith("D") || areaCode.StartsWith("T"))
+            return guideAlphaPower;
+
+        return guideAlphaSingle;
+    }
+
     void CreateGuideForCode(string areaCode)
     {
         Color col = GetGuideColorByAreaCode(areaCode);
+        float a = GetGuideAlphaByAreaCode(areaCode);
 
         // Bull
         if (areaCode == "Inner Bull")
         {
             var hl = CreateGuideHighlighter();
-            hl.ShowGuide(0f, bullRadius, 0f, 360f, col, guideAlpha, guideFadeIn);
+            hl.ShowGuide(0f, bullRadius, 0f, 360f, col, a, guideFadeIn);
             return;
         }
 
         if (areaCode == "Outer Bull")
         {
             var hl = CreateGuideHighlighter();
-            hl.ShowGuide(bullRadius, outerBullRadius, 0f, 360f, col, guideAlpha, guideFadeIn);
+            hl.ShowGuide(bullRadius, outerBullRadius, 0f, 360f, col, a, guideFadeIn);
             return;
         }
 
+        // D/T/S
         if (areaCode.Length < 2) return;
 
         char ring = areaCode[0];
@@ -478,25 +456,24 @@ public class DartsBoard : MonoBehaviour
         if (ring == 'T')
         {
             var hl = CreateGuideHighlighter();
-            hl.ShowGuide(tripleInner, tripleOuter, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+            hl.ShowGuide(tripleInner, tripleOuter, centerAngle, guideArcWidth, col, a, guideFadeIn);
             return;
         }
 
         if (ring == 'D')
         {
             var hl = CreateGuideHighlighter();
-            hl.ShowGuide(doubleInner, doubleOuter, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+            hl.ShowGuide(doubleInner, doubleOuter, centerAngle, guideArcWidth, col, a, guideFadeIn);
             return;
         }
 
         if (ring == 'S')
         {
-            // シングルは「ダブル/トリプル以外」2本の帯
             var hl1 = CreateGuideHighlighter();
-            hl1.ShowGuide(outerBullRadius, tripleInner, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+            hl1.ShowGuide(outerBullRadius, tripleInner, centerAngle, guideArcWidth, col, a, guideFadeIn);
 
             var hl2 = CreateGuideHighlighter();
-            hl2.ShowGuide(tripleOuter, doubleInner, centerAngle, guideArcWidth, col, guideAlpha, guideFadeIn);
+            hl2.ShowGuide(tripleOuter, doubleInner, centerAngle, guideArcWidth, col, a, guideFadeIn);
         }
     }
 
@@ -504,29 +481,56 @@ public class DartsBoard : MonoBehaviour
     {
         GameObject hlObj = new GameObject("AnswerGuide");
 
-        // ボードの子にする（ズレ＆スケール事故防止）
-        hlObj.transform.SetParent(transform, false);
-        hlObj.transform.localPosition = new Vector3(0, 0, -0.25f);
+        // ヒット演出と同じ面に出す（ズレない）
+        hlObj.transform.position = new Vector3(
+            transform.position.x,
+            transform.position.y,
+            transform.position.z + guideZOffsetFromBoard
+        );
 
         var hl = hlObj.AddComponent<SegmentHighlighter>();
-
-        // ここが「見えない問題」の本体
-        Renderer baseR = GetComponentInChildren<Renderer>();
-        if (baseR != null)
-        {
-            // guideSortingOrder は “加算” で使うのが安定
-            hl.SetSorting(baseR.sortingLayerName, baseR.sortingOrder + 200);
-        }
-        else
-        {
-            hl.SetSorting("Default", 200);
-        }
+        hl.SetSortingOrder(guideSortingOrder);
 
         _guideHls.Add(hl);
         return hl;
     }
 
+    // =========================
+    // DDOL誤取得対策：同じSceneから拾う
+    // =========================
+    GameManager FindInSceneGameManager()
+    {
+        Scene s = gameObject.scene;
+        var list = FindObjectsOfType<GameManager>(true);
 
+        for (int i = 0; i < list.Length; i++)
+        {
+            if (list[i] != null && list[i].gameObject.scene == s)
+                return list[i];
+        }
+
+        // フォールバック
+        return FindObjectOfType<GameManager>();
+    }
+
+    CheckoutAdvisor FindInSceneAdvisor()
+    {
+        Scene s = gameObject.scene;
+        var list = FindObjectsOfType<CheckoutAdvisor>(true);
+
+        for (int i = 0; i < list.Length; i++)
+        {
+            if (list[i] != null && list[i].gameObject.scene == s)
+                return list[i];
+        }
+
+        // フォールバック
+        return FindObjectOfType<CheckoutAdvisor>();
+    }
+
+    // =========================
+    // デバッグ
+    // =========================
     void OnDrawGizmos()
     {
         Gizmos.color = Color.red;

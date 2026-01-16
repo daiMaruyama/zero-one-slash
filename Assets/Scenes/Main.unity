@@ -8837,12 +8837,14 @@ MonoBehaviour:
   guideThreshold: 50
   guideColorSingle: {r: 0.3, g: 1, b: 1, a: 1}
   guideColorPower: {r: 1, g: 0.2, b: 1, a: 1}
-  guideColorBull: {r: 1, g: 0.10196078, b: 0.22238052, a: 1}
-  guideAlpha: 0.75
+  guideColorBull: {r: 1, g: 0.6, b: 0.1, a: 1}
+  guideAlphaSingle: 0.22
+  guideAlphaPower: 0.45
+  guideAlphaBull: 0.35
   guideFadeIn: 3
   guideArcWidth: 17.6
   guideSortingOrder: 200
-  guideZOffset: -0.25
+  guideZOffsetFromBoard: -2
 --- !u!114 &1425858700
 MonoBehaviour:
   m_ObjectHideFlags: 0
