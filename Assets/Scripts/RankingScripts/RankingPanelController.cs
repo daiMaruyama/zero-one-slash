@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 public class RankingPanelController : MonoBehaviour
 {
@@ -8,28 +7,42 @@ public class RankingPanelController : MonoBehaviour
     [SerializeField] GameObject entryPrefab;
     [SerializeField] Text infoText;
 
-    /// <summary>
-    /// TitleUIManagerから呼び出され、リストを最新にする
-    /// </summary>
     public async void Refresh()
     {
-        infoText.text = "LOADING...";
+        if (infoText != null) infoText.text = "LOADING...";
 
-        foreach (Transform child in entryContainer) Destroy(child.gameObject);
+        if (entryContainer != null)
+        {
+            foreach (Transform child in entryContainer)
+                Destroy(child.gameObject);
+        }
+
+        if (RankingManager.instance == null)
+        {
+            if (infoText != null) infoText.text = "NO MANAGER";
+            return;
+        }
 
         var results = await RankingManager.instance.GetRanking(10);
 
         if (results == null || results.Count == 0)
         {
-            infoText.text = "NO DATA";
+            if (infoText != null) infoText.text = "NO DATA";
             return;
         }
 
-        infoText.text = "";
+        if (infoText != null) infoText.text = "";
+
         foreach (var entry in results)
         {
-            var row = Instantiate(entryPrefab, entryContainer).GetComponent<RankingEntryRow>();
-            row.SetData(entry.Rank + 1, entry.PlayerName, (int)entry.Score);
+            var rowObj = Instantiate(entryPrefab, entryContainer);
+            var row = rowObj.GetComponent<RankingEntryRow>();
+
+            if (row != null)
+            {
+                string name = string.IsNullOrEmpty(entry.PlayerName) ? "Unknown" : entry.PlayerName;
+                row.SetData(entry.Rank + 1, name, (int)entry.Score);
+            }
         }
     }
 }
