@@ -8829,19 +8829,19 @@ MonoBehaviour:
   highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   innerBullHighlightColor: {r: 1, g: 0, b: 0.2, a: 1}
   outerBullHighlightColor: {r: 1, g: 0.3, b: 0, a: 1}
-  highlightArcWidth: 16
+  highlightArcWidth: 17
   dimmerIntensity: 0.64
   heavyDimmerIntensity: 0.75
   enableAnswerGuide: 1
   guideThreshold: 61
   guideColorSingle: {r: 1, g: 0.9778552, b: 0, a: 1}
   guideColorPower: {r: 1, g: 0.93436277, b: 0, a: 1}
-  guideColorBull: {r: 1, g: 0, b: 0.7916174, a: 1}
+  guideColorBull: {r: 1, g: 1, b: 1, a: 1}
   guideAlphaSingle: 0.22
   guideAlphaPower: 0.45
   guideAlphaBull: 0.35
-  guideFadeIn: 3
-  guideArcWidth: 17.6
+  guideFadeIn: 5
+  guideArcWidth: 17
   guideSortingOrder: 200
   guideZOffsetFromBoard: -2
 --- !u!1 &1443524803
