@@ -27,10 +27,10 @@ public class BloomManager : MonoBehaviour
     void Awake()
     {
         instance = this;
-        volume = GetComponent<Volume>(); // š‚±‚±‚ªˆá‚¤
+        volume = GetComponent<Volume>(); // ‚±‚±‚ªˆá‚¤
 
         // Volume‚©‚çBloom‚Ìİ’è‚ğˆø‚Á’£‚èo‚·
-        if (volume != null && volume.profile.TryGet(out bloom)) // š‚±‚±‚àˆá‚¤
+        if (volume != null && volume.profile.TryGet(out bloom)) // ‚±‚±‚àˆá‚¤
         {
             defaultIntensity = bloom.intensity.value;
             defaultColor = bloom.tint.value; // šColor‚¶‚á‚È‚­‚ÄTint
