@@ -17,25 +17,26 @@ public class CameraController : MonoBehaviour
         defaultPosition = transform.position;
     }
 
-    // ズームイン（DOTween）
+    // ズームイン（移動しない版）
     public void ZoomIn(Vector3 targetPos, float targetSize, float duration)
     {
-        // 以前のズームをキャンセル（連打対策）
+        // 以前のズームをキャンセル
         transform.DOKill();
         cam.DOKill();
 
-        // ターゲットのZ座標はカメラの元のZに合わせる
-        Vector3 finalPos = new Vector3(targetPos.x, targetPos.y, defaultPosition.z);
-
+        // カメラは動かさない（ズームだけ）
         cam.DOOrthoSize(targetSize, duration).SetEase(Ease.OutExpo);
-        transform.DOMove(finalPos, duration).SetEase(Ease.OutExpo);
     }
 
     // 元に戻す
     public void ResetCamera(float duration)
     {
-        // 戻る時は少し優しく (OutQuad)
+        transform.DOKill();
+        cam.DOKill();
+
         cam.DOOrthoSize(defaultSize, duration).SetEase(Ease.OutQuad);
-        transform.DOMove(defaultPosition, duration).SetEase(Ease.OutQuad);
+
+        // 念のため位置も確実に戻す
+        transform.position = defaultPosition;
     }
 }
