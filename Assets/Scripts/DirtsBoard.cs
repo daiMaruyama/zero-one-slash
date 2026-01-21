@@ -35,13 +35,13 @@ public class DartsBoard : MonoBehaviour
     [SerializeField] int guideThreshold = 60;
 
     [Header("ガイド色（上がり方で変える）")]
-    [SerializeField] Color guideColorSingle = new Color(0.3f, 1f, 1f, 1f);   // Sで上がり（1点）
-    [SerializeField] Color guideColorPower = new Color(1f, 0.2f, 1f, 1f);    // D/Tで上がり（3点）
-    [SerializeField] Color guideColorBull = new Color(1f, 0.6f, 0.1f, 1f);   // Bullで上がり（3点）
+    [SerializeField] Color guideColorSingle = new Color(0.3f, 1f, 1f, 1f);
+    [SerializeField] Color guideColorPower = new Color(1f, 0.2f, 1f, 1f);
+    [SerializeField] Color guideColorBull = new Color(1f, 0.6f, 0.1f, 1f);
 
     [Header("ガイド表示調整")]
     [SerializeField] float guideAlphaSingle = 0.22f;
-    [SerializeField] float guideAlphaPower = 0.45f; // 60/57 (T20/T19) が薄すぎて見えない対策
+    [SerializeField] float guideAlphaPower = 0.45f;
     [SerializeField] float guideAlphaBull = 0.35f;
 
     [SerializeField] float guideFadeIn = 0.35f;
@@ -50,6 +50,13 @@ public class DartsBoard : MonoBehaviour
 
     [Tooltip("ヒット演出と同じ平面に出す（ズレ根絶）。基本このままでOK")]
     [SerializeField] float guideZOffsetFromBoard = -2.0f;
+
+    [Header("ガイドを分かりやすくする（点滅/脈動）")]
+    [SerializeField] bool guidePulseEnabled = true;
+    [SerializeField] float guidePulseSpeed = 2.2f;        // 大きいほど速く点滅
+    [SerializeField] float guidePulseMinMul = 0.55f;       // 最低の明るさ倍率
+    [SerializeField] float guidePulseMaxMul = 1.15f;       // 最大の明るさ倍率
+    [SerializeField] float guidePulsePhaseJitter = 0.35f;  // ばらけさせる（同時に点滅しない）
 
     GameManager _gm;
     CheckoutAdvisor _advisor;
@@ -357,7 +364,6 @@ public class DartsBoard : MonoBehaviour
             return;
         }
 
-        // ここが重要：ガイドが消えてるのにキャッシュ一致で return すると再表示されない
         if (remaining == _lastRemaining && throwsLeft == _lastThrows && _guideHls.Count > 0) return;
 
         _lastRemaining = remaining;
@@ -422,6 +428,22 @@ public class DartsBoard : MonoBehaviour
         return guideAlphaSingle;
     }
 
+    void ApplyGuidePulse(SegmentHighlighter hl)
+    {
+        if (hl == null) return;
+
+        // ばらけさせて「全員同時点滅」を防ぐ
+        float phase = Random.Range(-guidePulsePhaseJitter, guidePulsePhaseJitter);
+
+        hl.SetGuidePulse(
+            guidePulseEnabled,
+            guidePulseSpeed,
+            guidePulseMinMul,
+            guidePulseMaxMul,
+            phase
+        );
+    }
+
     void CreateGuideForCode(string areaCode)
     {
         Color col = GetGuideColorByAreaCode(areaCode);
@@ -432,6 +454,7 @@ public class DartsBoard : MonoBehaviour
         {
             var hl = CreateGuideHighlighter();
             hl.ShowGuide(0f, bullRadius, 0f, 360f, col, a, guideFadeIn);
+            ApplyGuidePulse(hl);
             return;
         }
 
@@ -439,6 +462,7 @@ public class DartsBoard : MonoBehaviour
         {
             var hl = CreateGuideHighlighter();
             hl.ShowGuide(bullRadius, outerBullRadius, 0f, 360f, col, a, guideFadeIn);
+            ApplyGuidePulse(hl);
             return;
         }
 
@@ -457,6 +481,7 @@ public class DartsBoard : MonoBehaviour
         {
             var hl = CreateGuideHighlighter();
             hl.ShowGuide(tripleInner, tripleOuter, centerAngle, guideArcWidth, col, a, guideFadeIn);
+            ApplyGuidePulse(hl);
             return;
         }
 
@@ -464,6 +489,7 @@ public class DartsBoard : MonoBehaviour
         {
             var hl = CreateGuideHighlighter();
             hl.ShowGuide(doubleInner, doubleOuter, centerAngle, guideArcWidth, col, a, guideFadeIn);
+            ApplyGuidePulse(hl);
             return;
         }
 
@@ -471,9 +497,11 @@ public class DartsBoard : MonoBehaviour
         {
             var hl1 = CreateGuideHighlighter();
             hl1.ShowGuide(outerBullRadius, tripleInner, centerAngle, guideArcWidth, col, a, guideFadeIn);
+            ApplyGuidePulse(hl1);
 
             var hl2 = CreateGuideHighlighter();
             hl2.ShowGuide(tripleOuter, doubleInner, centerAngle, guideArcWidth, col, a, guideFadeIn);
+            ApplyGuidePulse(hl2);
         }
     }
 
@@ -481,7 +509,6 @@ public class DartsBoard : MonoBehaviour
     {
         GameObject hlObj = new GameObject("AnswerGuide");
 
-        // ヒット演出と同じ面に出す（ズレない）
         hlObj.transform.position = new Vector3(
             transform.position.x,
             transform.position.y,
@@ -509,7 +536,6 @@ public class DartsBoard : MonoBehaviour
                 return list[i];
         }
 
-        // フォールバック
         return FindObjectOfType<GameManager>();
     }
 
@@ -524,24 +550,23 @@ public class DartsBoard : MonoBehaviour
                 return list[i];
         }
 
-        // フォールバック
         return FindObjectOfType<CheckoutAdvisor>();
     }
 
-    // =========================
-    // デバッグ
-    // =========================
     void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, bullRadius);
         Gizmos.DrawWireSphere(transform.position, outerBullRadius);
+
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, tripleInner);
         Gizmos.DrawWireSphere(transform.position, tripleOuter);
+
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, doubleInner);
         Gizmos.DrawWireSphere(transform.position, doubleOuter);
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, missRadius);
     }
