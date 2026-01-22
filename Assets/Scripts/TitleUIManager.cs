@@ -1,201 +1,106 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using DG.Tweening;
 
 public class TitleUIManager : MonoBehaviour
 {
-    [Header("グループ参照")]
-    [SerializeField] GameObject titleUIGroup;
+    [Header("タイトルのボタン群（Windowは入れない）")]
+    [SerializeField] CanvasGroup titleButtonsGroup;
 
-    [Header("設定ウィンドウ参照")]
-    [SerializeField] GameObject settingsWindowRoot;
-    [SerializeField] RectTransform settingsPanelContent;
+    [Header("設定パネル")]
+    [SerializeField] SettingsPanelAnimator settingsPanel;
     [SerializeField] Button openSettingsButton;
     [SerializeField] Button closeSettingsButton;
 
-    [Header("ランキングウィンドウ参照")]
-    [SerializeField] GameObject rankingWindowRoot;
-    [SerializeField] RectTransform rankingPanelContent;
+    [Header("ランキングパネル")]
+    [SerializeField] SettingsPanelAnimator rankingPanel;
     [SerializeField] Button openRankingButton;
     [SerializeField] Button closeRankingButton;
 
-    [Header("演出設定")]
-    [SerializeField] float animationDuration = 0.28f;
-    [SerializeField] float openStartScale = 0.92f;
-    [SerializeField] Ease openEase = Ease.OutCubic;
-    [SerializeField] Ease closeEase = Ease.InCubic;
+    void Awake()
+    {
+        if (settingsPanel != null) settingsPanel.HideInstant();
+        if (rankingPanel != null) rankingPanel.HideInstant();
 
-    CanvasGroup _settingsGroup;
-    CanvasGroup _rankingGroup;
-
-    bool _isAnimating;
+        SetTitleButtonsVisible(true);
+    }
 
     void Start()
     {
-        _settingsGroup = GetOrAddCanvasGroup(settingsWindowRoot);
-        _rankingGroup = GetOrAddCanvasGroup(rankingWindowRoot);
+        if (openSettingsButton != null) openSettingsButton.onClick.AddListener(OpenSettings);
+        if (closeSettingsButton != null) closeSettingsButton.onClick.AddListener(CloseSettings);
 
-        InitializeWindow(settingsWindowRoot, settingsPanelContent, _settingsGroup);
-        InitializeWindow(rankingWindowRoot, rankingPanelContent, _rankingGroup);
-
-        if (titleUIGroup) titleUIGroup.SetActive(true);
-
-        if (openSettingsButton) openSettingsButton.onClick.AddListener(OnOpenSettings);
-        if (closeSettingsButton) closeSettingsButton.onClick.AddListener(OnCloseSettings);
-
-        if (openRankingButton) openRankingButton.onClick.AddListener(OnOpenRanking);
-        if (closeRankingButton) closeRankingButton.onClick.AddListener(OnCloseRanking);
+        if (openRankingButton != null) openRankingButton.onClick.AddListener(OpenRanking);
+        if (closeRankingButton != null) closeRankingButton.onClick.AddListener(CloseRanking);
     }
 
-    CanvasGroup GetOrAddCanvasGroup(GameObject root)
+    void OpenSettings()
     {
-        if (root == null) return null;
+        ClearSelect();
 
-        var g = root.GetComponent<CanvasGroup>();
-        if (g == null) g = root.AddComponent<CanvasGroup>();
-        return g;
+        if (rankingPanel != null) rankingPanel.HideInstant();
+
+        SetTitleButtonsVisible(false);
+
+        if (settingsPanel != null) settingsPanel.Open();
     }
 
-    void InitializeWindow(GameObject root, RectTransform panel, CanvasGroup group)
+    void CloseSettings()
     {
-        if (root == null || group == null) return;
+        ClearSelect();
 
-        root.SetActive(false);
+        if (settingsPanel != null) settingsPanel.Close();
 
-        group.alpha = 0f;
-        group.interactable = false;
-        group.blocksRaycasts = false;
+        SetTitleButtonsVisible(true);
+    }
 
-        if (panel != null)
+    void OpenRanking()
+    {
+        ClearSelect();
+
+        if (settingsPanel != null) settingsPanel.HideInstant();
+
+        SetTitleButtonsVisible(false);
+
+        if (rankingPanel != null) rankingPanel.Open();
+
+        if (rankingPanel != null)
         {
-            panel.localScale = Vector3.one * openStartScale;
+            var controller = rankingPanel.GetComponentInChildren<RankingPanelController>(true);
+            if (controller != null) controller.Refresh();
         }
     }
 
-    void OnOpenSettings()
+    void CloseRanking()
     {
-        if (_isAnimating) return;
-        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+        ClearSelect();
 
-        if (titleUIGroup) titleUIGroup.SetActive(false);
+        if (rankingPanel != null) rankingPanel.Close();
 
-        OpenWindow(settingsWindowRoot, settingsPanelContent, _settingsGroup);
+        SetTitleButtonsVisible(true);
     }
 
-    void OnCloseSettings()
+    void SetTitleButtonsVisible(bool visible)
     {
-        if (_isAnimating) return;
-        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+        if (titleButtonsGroup == null) return;
 
-        CloseWindow(settingsWindowRoot, settingsPanelContent, _settingsGroup, () =>
-        {
-            if (titleUIGroup) titleUIGroup.SetActive(true);
-        });
+        titleButtonsGroup.alpha = visible ? 1f : 0f;
+        titleButtonsGroup.interactable = visible;
+        titleButtonsGroup.blocksRaycasts = visible;
     }
 
-    void OnOpenRanking()
+    void ClearSelect()
     {
-        if (_isAnimating) return;
-        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-
-        if (titleUIGroup) titleUIGroup.SetActive(false);
-
-        OpenWindow(rankingWindowRoot, rankingPanelContent, _rankingGroup);
-
-        if (rankingWindowRoot != null)
-        {
-            var rankingDisplay = rankingWindowRoot.GetComponentInChildren<RankingPanelController>();
-            if (rankingDisplay != null) rankingDisplay.Refresh();
-        }
-    }
-
-    void OnCloseRanking()
-    {
-        if (_isAnimating) return;
-        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-
-        CloseWindow(rankingWindowRoot, rankingPanelContent, _rankingGroup, () =>
-        {
-            if (titleUIGroup && (settingsWindowRoot == null || !settingsWindowRoot.activeSelf))
-            {
-                titleUIGroup.SetActive(true);
-            }
-        });
-    }
-
-    void OpenWindow(GameObject root, RectTransform panel, CanvasGroup group)
-    {
-        if (root == null || group == null) return;
-
-        _isAnimating = true;
-
-        root.SetActive(true);
-
-        group.DOKill();
-        if (panel != null) panel.DOKill();
-
-        group.alpha = 0f;
-        group.interactable = false;
-        group.blocksRaycasts = false;
-
-        if (panel != null)
-        {
-            panel.localScale = Vector3.one * openStartScale;
-        }
-
-        Sequence seq = DOTween.Sequence();
-
-        seq.Append(group.DOFade(1f, animationDuration).SetEase(openEase));
-
-        if (panel != null)
-        {
-            seq.Join(panel.DOScale(1f, animationDuration).SetEase(openEase));
-        }
-
-        seq.OnComplete(() =>
-        {
-            group.interactable = true;
-            group.blocksRaycasts = true;
-            _isAnimating = false;
-        });
-    }
-
-    void CloseWindow(GameObject root, RectTransform panel, CanvasGroup group, System.Action onClosed)
-    {
-        if (root == null || group == null) return;
-
-        _isAnimating = true;
-
-        group.DOKill();
-        if (panel != null) panel.DOKill();
-
-        group.interactable = false;
-        group.blocksRaycasts = false;
-
-        Sequence seq = DOTween.Sequence();
-
-        seq.Append(group.DOFade(0f, animationDuration).SetEase(closeEase));
-
-        if (panel != null)
-        {
-            seq.Join(panel.DOScale(openStartScale, animationDuration).SetEase(closeEase));
-        }
-
-        seq.OnComplete(() =>
-        {
-            root.SetActive(false);
-            _isAnimating = false;
-            onClosed?.Invoke();
-        });
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
     }
 
     void OnDestroy()
     {
-        if (_settingsGroup != null) _settingsGroup.DOKill();
-        if (_rankingGroup != null) _rankingGroup.DOKill();
+        if (openSettingsButton != null) openSettingsButton.onClick.RemoveListener(OpenSettings);
+        if (closeSettingsButton != null) closeSettingsButton.onClick.RemoveListener(CloseSettings);
 
-        if (settingsPanelContent != null) settingsPanelContent.DOKill();
-        if (rankingPanelContent != null) rankingPanelContent.DOKill();
+        if (openRankingButton != null) openRankingButton.onClick.RemoveListener(OpenRanking);
+        if (closeRankingButton != null) closeRankingButton.onClick.RemoveListener(CloseRanking);
     }
 }

@@ -17,36 +17,42 @@ public class SettingsPanelAnimator : MonoBehaviour
     [SerializeField] Ease closeEase = Ease.InQuad;
     [SerializeField] float closeScaleTo = 0.95f;
 
-    Tween _tween;
+    [Header("共通")]
+    [SerializeField] bool useUnscaledTime = true;
 
-    void Reset()
-    {
-        canvasGroup = GetComponentInChildren<CanvasGroup>();
-        panelRoot = GetComponent<RectTransform>();
-    }
+    Tween _tween;
 
     void Awake()
     {
-        if (panelRoot == null) panelRoot = GetComponent<RectTransform>();
-        if (canvasGroup == null) canvasGroup = GetComponentInChildren<CanvasGroup>();
+        if (panelRoot == null) panelRoot = transform as RectTransform;
+        if (canvasGroup == null) canvasGroup = GetComponentInChildren<CanvasGroup>(true);
 
-        // 初期状態は非表示にしておく（必要ならInspectorでOFFにしてもOK）
         HideInstant();
     }
 
     public void Open()
     {
         gameObject.SetActive(true);
-
         KillTween();
 
-        if (canvasGroup != null) canvasGroup.alpha = 0f;
-        if (panelRoot != null) panelRoot.localScale = Vector3.one * openScaleFrom;
+        float from = Mathf.Max(0.01f, openScaleFrom);
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 1f;
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
+        }
+
+        if (panelRoot != null)
+        {
+            // ここで強制復活（scale 0 固定を殺す）
+            panelRoot.localScale = Vector3.one * from;
+        }
 
         Sequence seq = DOTween.Sequence();
-        seq.SetUpdate(true);
+        seq.SetUpdate(useUnscaledTime);
 
-        if (canvasGroup != null) seq.Join(canvasGroup.DOFade(1f, openDuration).SetEase(Ease.OutQuad));
         if (panelRoot != null) seq.Join(panelRoot.DOScale(1f, openDuration).SetEase(openEase));
 
         _tween = seq;
@@ -56,14 +62,22 @@ public class SettingsPanelAnimator : MonoBehaviour
     {
         KillTween();
 
-        Sequence seq = DOTween.Sequence();
-        seq.SetUpdate(true);
+        float to = Mathf.Max(0.01f, closeScaleTo);
 
-        if (canvasGroup != null) seq.Join(canvasGroup.DOFade(0f, closeDuration).SetEase(Ease.OutQuad));
-        if (panelRoot != null) seq.Join(panelRoot.DOScale(closeScaleTo, closeDuration).SetEase(closeEase));
+        if (canvasGroup != null)
+        {
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+        }
+
+        Sequence seq = DOTween.Sequence();
+        seq.SetUpdate(useUnscaledTime);
+
+        if (panelRoot != null) seq.Join(panelRoot.DOScale(to, closeDuration).SetEase(closeEase));
 
         seq.OnComplete(() =>
         {
+            if (canvasGroup != null) canvasGroup.alpha = 0f;
             gameObject.SetActive(false);
         });
 
@@ -74,8 +88,18 @@ public class SettingsPanelAnimator : MonoBehaviour
     {
         KillTween();
 
-        if (canvasGroup != null) canvasGroup.alpha = 0f;
-        if (panelRoot != null) panelRoot.localScale = Vector3.one;
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+        }
+
+        if (panelRoot != null)
+        {
+            panelRoot.localScale = Vector3.one; // 0にしない（事故防止）
+        }
+
         gameObject.SetActive(false);
     }
 
