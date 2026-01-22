@@ -32,6 +32,13 @@ public class GameManager : MonoBehaviour
     public GameObject resultPanel;
     public Text resultScoreText;
 
+    [Header("ランキング入力（新記録時のみ）")]
+    [SerializeField] NewRecordPanelController newRecordPanel;
+
+    [Header("デバッグ")]
+    [SerializeField] bool debugForceShowNameInput = false;
+    [SerializeField] KeyCode debugOpenKey = KeyCode.F2;
+
     [Header("エフェクト設定")]
     public GameObject effectSingle;
     public GameObject effectDouble;
@@ -119,6 +126,13 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+        // デバッグ：いつでも名前入力パネルを開く（targetTextがnullでも動く）
+        if (Input.GetKeyDown(debugOpenKey))
+        {
+            Debug.Log("[GM] Debug open name input");
+            OpenNameInputPanel_Debug(totalGameScore);
+        }
+
         if (targetText == null) return;
 
         if (isGameActive)
@@ -207,7 +221,7 @@ public class GameManager : MonoBehaviour
             if (GameEffectsManager.instance != null)
                 GameEffectsManager.instance.PlayFinishEffect();
 
-            // ✅ Bullズレ対策：ズーム中心を「ボード中心」に固定
+            // Bullズレ対策：ズーム中心を「ボード中心」に固定
             if (CameraController.instance != null)
             {
                 Vector3 center = (boardTransform != null) ? boardTransform.position : Vector3.zero;
@@ -270,12 +284,12 @@ public class GameManager : MonoBehaviour
 
     void WinProcess(string finishingArea)
     {
-        int pointsGet = 1;
+        int pointsGet = 10;
         string winMessage = "WIN!!";
 
         if (finishingArea.StartsWith("D") || finishingArea.StartsWith("T") || finishingArea.Contains("Bull"))
         {
-            pointsGet = 3;
+            pointsGet = 20;
             winMessage = "GREAT WIN!!";
         }
 
@@ -315,26 +329,48 @@ public class GameManager : MonoBehaviour
         isGameActive = false;
         isInputBlocked = true;
 
-        if (resultPanel != null)
+        int best = PlayerPrefs.GetInt("BEST_SCORE", 0);
+        bool isNewRecord = totalGameScore > best;
+
+        // デバッグ中は強制で名前入力を出す
+        bool shouldOpenNameInput = debugForceShowNameInput || isNewRecord;
+
+        // 先に結果を消しておく（重なり防止）
+        if (resultPanel != null) resultPanel.SetActive(false);
+
+        if (shouldOpenNameInput && newRecordPanel != null)
         {
-            resultPanel.SetActive(true);
-            AnimateResultScore();
+            newRecordPanel.Open(totalGameScore, () =>
+            {
+                // 新記録の時だけBEST更新（ここで確定）
+                if (isNewRecord)
+                {
+                    PlayerPrefs.SetInt("BEST_SCORE", totalGameScore);
+                    PlayerPrefs.Save();
+                }
+
+                ShowResultPanel();
+            });
+            return;
         }
+
+        ShowResultPanel();
     }
+
 
     void AnimateResultScore()
     {
         if (resultScoreText == null) return;
 
         int displayScore = 0;
-        resultScoreText.text = "SCORE\n0";
+        resultScoreText.text = "SCORE: 0";
 
         DOTween.To(() => displayScore, x => displayScore = x, totalGameScore, scoreCountDuration)
             .SetEase(scoreEaseType)
             .OnUpdate(() =>
             {
                 if (resultScoreText != null)
-                    resultScoreText.text = "SCORE\n" + displayScore.ToString("N0");
+                    resultScoreText.text = "SCORE: " + displayScore.ToString("N0");
             })
             .OnComplete(() =>
             {
@@ -348,7 +384,7 @@ public class GameManager : MonoBehaviour
                         .SetLink(resultScoreText.gameObject);
                 }
 
-                CheckAndSaveHighScore();
+                // CheckAndSaveHighScore();
 
                 var submissionUI = resultPanel.GetComponentInChildren<ResultPanelController>();
                 if (submissionUI != null) submissionUI.SetupSubmission(totalGameScore);
@@ -445,5 +481,31 @@ public class GameManager : MonoBehaviour
                 throwIcons[i].SetActive(i < throwsLeft);
             }
         }
+    }
+    void ShowResultPanel()
+    {
+        if (resultPanel != null)
+        {
+            resultPanel.SetActive(true);
+            AnimateResultScore();
+        }
+    }
+    void OpenNameInputPanel_Debug(int score)
+    {
+        Debug.Log("[GM] OpenNameInputPanel_Debug called");
+
+        if (newRecordPanel == null)
+        {
+            Debug.LogError("[GM] newRecordPanel is NULL (Inspectorで刺さってない)");
+            return;
+        }
+
+        if (resultPanel != null) resultPanel.SetActive(false);
+
+        newRecordPanel.Open(score, () =>
+        {
+            Debug.Log("[GM] Name input finished -> ShowResultPanel");
+            ShowResultPanel();
+        });
     }
 }
