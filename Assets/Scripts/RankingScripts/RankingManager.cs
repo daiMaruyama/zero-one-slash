@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Threading.Tasks;
 using Unity.Services.Core;
-using Unity.Services.Core.Environments;
 using Unity.Services.Authentication;
 using Unity.Services.Leaderboards;
 using Unity.Services.Leaderboards.Models;
@@ -12,12 +11,14 @@ public class RankingManager : MonoBehaviour
     public static RankingManager instance;
 
     const string LEADERBOARD_ID = "MyGameHighScore";
-
     const string KEY_USERNAME = "AUTO_USER_NAME";
     const string KEY_PASSWORD = "AUTO_USER_PASS";
 
     Task _initTask;
     bool _isReady;
+    public int LastSubmittedRank { get; private set; } = -1; // 0が1位
+    public double LastSubmittedScore { get; private set; } = -1;
+
 
     void Awake()
     {
@@ -39,7 +40,7 @@ public class RankingManager : MonoBehaviour
     {
         try
         {
-            // Environmentを分けてる場合はここを使う（未使用なら消してOK）
+            // Environmentを分けてる場合はここを使う（未使用ならこのままでOK）
             // var options = new InitializationOptions().SetEnvironmentName("production");
             // await UnityServices.InitializeAsync(options);
 
@@ -56,7 +57,7 @@ public class RankingManager : MonoBehaviour
         catch (System.Exception e)
         {
             _isReady = false;
-            Debug.LogError($"[Ranking] Init Error: {e.Message}");
+            Debug.LogError($"[Ranking] Init Error: {e}");
         }
     }
 
@@ -80,7 +81,7 @@ public class RankingManager : MonoBehaviour
         {
             await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
         }
-        catch (RequestFailedException)
+        catch (Unity.Services.Core.RequestFailedException)
         {
             Debug.LogWarning("[Ranking] Login failed. Create new account...");
             PlayerPrefs.DeleteKey(KEY_USERNAME);
@@ -113,21 +114,61 @@ public class RankingManager : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[Ranking] Create User Failed: {e.Message}");
+            Debug.LogError($"[Ranking] Create User Failed: {e}");
         }
+    }
+
+    public async Task<bool> ShouldOpenNameInputAsync(int score, int topN)
+    {
+        await EnsureReadyAsync();
+        if (!_isReady) return false;
+        if (!AuthenticationService.Instance.IsSignedIn) return false;
+
+        // すでに自分が持ってるスコアより低いなら送っても意味ない（Keep Best運用）
+        double myBest = -1;
+
+        try
+        {
+            var myEntry = await LeaderboardsService.Instance.GetPlayerScoreAsync(LEADERBOARD_ID);
+            myBest = myEntry.Score;
+        }
+        catch
+        {
+            // まだ登録がない場合はOK
+            myBest = -1;
+        }
+
+        if (myBest >= 0 && score <= myBest) return false;
+
+        // TopNのスコア一覧を取って判定
+        var page = await LeaderboardsService.Instance.GetScoresAsync(
+            LEADERBOARD_ID,
+            new GetScoresOptions { Limit = topN }
+        );
+
+        var list = page.Results;
+
+        // まだTopN埋まってないなら無条件で入れる
+        if (list == null || list.Count < topN) return true;
+
+        // N位（最下位）のスコアより高ければTopN入り
+        double nthScore = list[list.Count - 1].Score;
+        return score >= nthScore;
     }
 
     string SanitizePlayerName(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return "Unknown";
 
-        // スペース禁止（Unity仕様）なので全部除去
-        string s = raw.Replace(" ", "").Replace("　", "").Replace("\n", "").Replace("\r", "").Replace("\t", "");
+        // スペース禁止があるので全部除去
+        string s = raw.Replace(" ", "")
+                      .Replace("　", "")
+                      .Replace("\n", "")
+                      .Replace("\r", "")
+                      .Replace("\t", "");
 
-        // 何も残らなかったらUnknown
         if (string.IsNullOrEmpty(s)) s = "Unknown";
 
-        // 長すぎると困るので適当に制限（任意）
         if (s.Length > 12) s = s.Substring(0, 12);
 
         return s;
@@ -144,18 +185,21 @@ public class RankingManager : MonoBehaviour
         {
             string validName = SanitizePlayerName(playerName);
 
-            // PlayerName更新（LeaderboardEntry.PlayerName に乗る）
-            // スペースがあると失敗する仕様あり :contentReference[oaicite:1]{index=1}
+            // PlayerName更新
             await AuthenticationService.Instance.UpdatePlayerNameAsync(validName);
 
+            // スコア送信
             await LeaderboardsService.Instance.AddPlayerScoreAsync(LEADERBOARD_ID, score);
 
             Debug.Log($"[Ranking] Score Submitted: {score} (Name: {validName})");
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[Ranking] Submit Score Error: {e.Message}");
+            Debug.LogError($"[Ranking] Submit Score Error: {e}");
         }
+        var me = await LeaderboardsService.Instance.GetPlayerScoreAsync(LEADERBOARD_ID);
+        LastSubmittedRank = me.Rank;
+        LastSubmittedScore = me.Score;
     }
 
     public async Task<List<LeaderboardEntry>> GetRanking(int limit = 10)
@@ -176,7 +220,7 @@ public class RankingManager : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[Ranking] Get Ranking Error: {e.Message}");
+            Debug.LogError($"[Ranking] Get Ranking Error: {e}");
             return null;
         }
     }
