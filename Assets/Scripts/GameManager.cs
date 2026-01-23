@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using DG.Tweening;
+using System.Threading.Tasks;
 
 public class GameManager : MonoBehaviour
 {
@@ -62,7 +63,7 @@ public class GameManager : MonoBehaviour
     [Range(0f, 1f)] public float baseBgmVolume = 0.5f;
 
     [Header("ボード参照（Bullズレ対策）")]
-    [SerializeField] Transform boardTransform; // ←ダーツボードのTransformを入れる
+    [SerializeField] Transform boardTransform;
 
     // 外部参照用（フォーカス用）
     public int RemainingScore => currentTargetScore;
@@ -74,6 +75,9 @@ public class GameManager : MonoBehaviour
     int totalGameScore;
     bool isGameActive;
     bool isInputBlocked;
+
+    // このプレイで新記録だったか（リザルト表示用）
+    bool _isNewRecordThisRun = false;
 
     public bool CanThrow => isGameActive && !isInputBlocked;
 
@@ -126,8 +130,8 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // デバッグ：いつでも名前入力パネルを開く（targetTextがnullでも動く）
-        if (Input.GetKeyDown(debugOpenKey))
+        // デバッグ：debugForceShowNameInput がONの時だけ任意キーで出す
+        if (debugForceShowNameInput && Input.GetKeyDown(debugOpenKey))
         {
             Debug.Log("[GM] Debug open name input");
             OpenNameInputPanel_Debug(totalGameScore);
@@ -221,7 +225,6 @@ public class GameManager : MonoBehaviour
             if (GameEffectsManager.instance != null)
                 GameEffectsManager.instance.PlayFinishEffect();
 
-            // Bullズレ対策：ズーム中心を「ボード中心」に固定
             if (CameraController.instance != null)
             {
                 Vector3 center = (boardTransform != null) ? boardTransform.position : Vector3.zero;
@@ -284,18 +287,17 @@ public class GameManager : MonoBehaviour
 
     void WinProcess(string finishingArea)
     {
-        int pointsGet = 10;
+        int pointsGet = 100;
         string winMessage = "WIN!!";
 
         if (finishingArea.StartsWith("D") || finishingArea.StartsWith("T") || finishingArea.Contains("Bull"))
         {
-            pointsGet = 20;
+            pointsGet = 500;
             winMessage = "GREAT WIN!!";
         }
 
         totalGameScore += pointsGet;
 
-        // ここも中心ズームなら安定
         if (CameraController.instance != null && GameEffectsManager.instance == null)
         {
             Vector3 center = (boardTransform != null) ? boardTransform.position : Vector3.zero;
@@ -324,31 +326,25 @@ public class GameManager : MonoBehaviour
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
-    void GameOver()
+    async void GameOver()
     {
         isGameActive = false;
         isInputBlocked = true;
 
-        int best = PlayerPrefs.GetInt("BEST_SCORE", 0);
-        bool isNewRecord = totalGameScore > best;
-
-        // デバッグ中は強制で名前入力を出す
-        bool shouldOpenNameInput = debugForceShowNameInput || isNewRecord;
-
-        // 先に結果を消しておく（重なり防止）
         if (resultPanel != null) resultPanel.SetActive(false);
+
+        int topN = 10; // ←ここを5にすればTop5判定になる
+        bool shouldOpenNameInput = debugForceShowNameInput;
+
+        if (!shouldOpenNameInput && RankingManager.instance != null)
+        {
+            shouldOpenNameInput = await RankingManager.instance.ShouldOpenNameInputAsync(totalGameScore, topN);
+        }
 
         if (shouldOpenNameInput && newRecordPanel != null)
         {
             newRecordPanel.Open(totalGameScore, () =>
             {
-                // 新記録の時だけBEST更新（ここで確定）
-                if (isNewRecord)
-                {
-                    PlayerPrefs.SetInt("BEST_SCORE", totalGameScore);
-                    PlayerPrefs.Save();
-                }
-
                 ShowResultPanel();
             });
             return;
@@ -356,7 +352,6 @@ public class GameManager : MonoBehaviour
 
         ShowResultPanel();
     }
-
 
     void AnimateResultScore()
     {
@@ -374,39 +369,52 @@ public class GameManager : MonoBehaviour
             })
             .OnComplete(() =>
             {
+                // 途中でDestroyされてたら何もしない（DOTween SafeMode対策）
+                if (resultScoreText == null) return;
+
                 if (seResult != null && AudioManager.instance != null)
                     AudioManager.instance.PlaySE(seResult);
 
-                if (resultScoreText != null)
+                // スコア文字ちょい気持ちよく
+                resultScoreText.transform.DOScale(1.2f, 0.1f)
+                    .SetLoops(2, LoopType.Yoyo)
+                    .SetLink(resultScoreText.gameObject);
+
+                // 本当に新記録だった時だけ表示（あなたのフラグ運用）
+                if (_isNewRecordThisRun)
                 {
-                    resultScoreText.transform.DOScale(1.2f, 0.1f)
-                        .SetLoops(2, LoopType.Yoyo)
-                        .SetLink(resultScoreText.gameObject);
+                    resultScoreText.text += "\n<color=red>NEW RECORD!!</color>";
                 }
 
-                // CheckAndSaveHighScore();
+                // ランキング結果表示（送信した時だけ・古い情報は出さない）
+                if (RankingManager.instance != null)
+                {
+                    int rank = RankingManager.instance.LastSubmittedRank; // 0が1位
+                    int lastScore = (int)RankingManager.instance.LastSubmittedScore;
 
-                var submissionUI = resultPanel.GetComponentInChildren<ResultPanelController>();
-                if (submissionUI != null) submissionUI.SetupSubmission(totalGameScore);
+                    // 今回送ったスコアと一致してる時だけ表示（前回のrankが残る事故防止）
+                    if (rank >= 0 && lastScore == totalGameScore)
+                    {
+                        if (rank == 0)
+                        {
+                            resultScoreText.text += "\n<color=yellow>BEST!!</color>";
+                        }
+                        else if (rank < 10)
+                        {
+                            resultScoreText.text += $"\n<color=cyan>RANK #{rank + 1}</color>";
+                        }
+                        // rank >= 10 は表示しない（Top10入りだけ見せたい想定）
+                    }
+                }
 
-            }).SetLink(resultScoreText.gameObject);
-    }
+                if (resultPanel != null)
+                {
+                    var submissionUI = resultPanel.GetComponentInChildren<ResultPanelController>();
+                    if (submissionUI != null) submissionUI.SetupSubmission(totalGameScore);
+                }
 
-    void CheckAndSaveHighScore()
-    {
-        int currentBest = PlayerPrefs.GetInt("BEST_SCORE", 0);
-
-        if (totalGameScore > currentBest)
-        {
-            PlayerPrefs.SetInt("BEST_SCORE", totalGameScore);
-            PlayerPrefs.Save();
-
-            if (resultScoreText != null)
-            {
-                resultScoreText.text += "\n<color=red>NEW RECORD!!</color>";
-                resultScoreText.transform.DOPunchScale(Vector3.one * 0.2f, 0.5f);
-            }
-        }
+            })
+            .SetLink(resultScoreText.gameObject);
     }
 
     public void RetryGame()
@@ -482,6 +490,7 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+
     void ShowResultPanel()
     {
         if (resultPanel != null)
@@ -490,6 +499,7 @@ public class GameManager : MonoBehaviour
             AnimateResultScore();
         }
     }
+
     void OpenNameInputPanel_Debug(int score)
     {
         Debug.Log("[GM] OpenNameInputPanel_Debug called");
