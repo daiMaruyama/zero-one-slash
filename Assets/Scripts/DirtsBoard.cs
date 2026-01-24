@@ -57,6 +57,10 @@ public class DartsBoard : MonoBehaviour
     [SerializeField] float guidePulseMinMul = 0.55f;       // 最低の明るさ倍率
     [SerializeField] float guidePulseMaxMul = 1.15f;       // 最大の明るさ倍率
     [SerializeField] float guidePulsePhaseJitter = 0.35f;  // ばらけさせる（同時に点滅しない）
+    
+    [Header("ガイド表示調整")]
+    [SerializeField] float guideAppearanceDelay = 1.5f; // 何秒待つか
+    float _guideTimer = 0f;                            // 経過時間用
 
     GameManager _gm;
     CheckoutAdvisor _advisor;
@@ -349,28 +353,46 @@ public class DartsBoard : MonoBehaviour
             return;
         }
 
+        // 投げられない状態（リザルト中など）は即消去
         if (!_gm.CanThrow)
         {
             ClearGuideHighlights(false);
+            _guideTimer = 0; // タイマーもリセット
             return;
         }
 
         int remaining = _gm.RemainingScore;
         int throwsLeft = _gm.ThrowsLeft;
 
+        // スコアが変わった（投げた）瞬間にタイマーをリセットしてガイドを消す
+        if (remaining != _lastRemaining || throwsLeft != _lastThrows)
+        {
+            ClearGuideHighlights(false); // 一旦消す
+            _lastRemaining = remaining;
+            _lastThrows = throwsLeft;
+            _guideTimer = 0f; // タイマーリセット
+            return;
+        }
+
+        // ガイド表示対象外のスコアなら何もしない
         if (remaining > guideThreshold)
         {
             ClearGuideHighlights(true);
             return;
         }
 
-        if (remaining == _lastRemaining && throwsLeft == _lastThrows && _guideHls.Count > 0) return;
+        // 指定秒数経過するまでカウントアップして、足りなければ return
+        if (_guideTimer < guideAppearanceDelay)
+        {
+            _guideTimer += Time.deltaTime;
+            return;
+        }
 
-        _lastRemaining = remaining;
-        _lastThrows = throwsLeft;
+        // すでにガイドが出ているなら、これ以降の処理（生成）は不要
+        if (_guideHls.Count > 0) return;
 
+        // --- ここからガイド生成 ---
         var finishes = _advisor.GetOneDartFinishAreaCodes(remaining, doubleOutOnly: false);
-
         if (finishes == null || finishes.Count == 0)
         {
             ClearGuideHighlights(true);
