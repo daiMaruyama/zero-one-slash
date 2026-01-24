@@ -1,46 +1,55 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Threading.Tasks;
 
 public class ResultPanelController : MonoBehaviour
 {
-    [SerializeField] InputField nameInputField;
+    [Header("UI")]
+    [SerializeField] GameObject submitRoot;
+    [SerializeField] InputField nameInput;
     [SerializeField] Button submitButton;
     [SerializeField] Text statusText;
 
-    int scoreToSubmit;
+    int _score;
 
-    void Start()
+    void Awake()
     {
-        if (submitButton) submitButton.onClick.AddListener(OnSubmit);
-        if (nameInputField) nameInputField.text = PlayerPrefs.GetString("PLAYER_DISPLAY_NAME", "PLAYER");
-
-        // 最初は入力を受け付けない
-        SetUIState(false);
+        if (submitButton != null)
+            submitButton.onClick.AddListener(OnClickSubmit);
     }
 
     public void SetupSubmission(int score)
     {
-        scoreToSubmit = score;
-        SetUIState(true);
-        if (statusText) statusText.text = "ENTER YOUR NAME";
+        _score = score;
+
+        if (submitRoot != null) submitRoot.SetActive(true);
+
+        if (statusText != null)
+            statusText.text = "名前を入力して送信";
     }
 
-    void SetUIState(bool active)
+    async void OnClickSubmit()
     {
-        if (nameInputField) nameInputField.interactable = active;
-        if (submitButton) submitButton.interactable = active;
+        if (submitButton != null) submitButton.interactable = false;
+
+        string playerName = nameInput != null ? nameInput.text : "Unknown";
+
+        if (statusText != null)
+            statusText.text = "送信中...";
+
+        await SubmitAsync(playerName);
+
+        if (statusText != null)
+            statusText.text = "送信完了！";
+
+        // 二度押し防止nara
+        // if (submitRoot != null) submitRoot.SetActive(false);
     }
 
-    async void OnSubmit()
+    async Task SubmitAsync(string playerName)
     {
-        SetUIState(false);
-        if (statusText) statusText.text = "SENDING...";
+        if (RankingManager.instance == null) return;
 
-        string playerName = nameInputField.text;
-        PlayerPrefs.SetString("PLAYER_DISPLAY_NAME", playerName);
-
-        await RankingManager.instance.SubmitScoreWithUpdateName(scoreToSubmit, playerName);
-
-        if (statusText) statusText.text = "SCORE SUBMITTED";
+        await RankingManager.instance.SubmitScoreWithUpdateName(_score, playerName);
     }
 }
