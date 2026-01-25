@@ -71,6 +71,7 @@ public class DartsBoard : MonoBehaviour
     readonly List<SegmentHighlighter> _guideHls = new();
 
     GameObject dimmerObject;
+    public NumberPopManager popManager;
 
     struct HitResult
     {
@@ -82,6 +83,7 @@ public class DartsBoard : MonoBehaviour
         public bool shouldHighlight;
         public bool isRipple;
         public bool isInnerBull;
+        public int baseScore;
 
         public float hlInner;
         public float hlOuter;
@@ -138,6 +140,13 @@ public class DartsBoard : MonoBehaviour
         HitResult result = CalculateHitResult(hitPos);
         if (!result.isValid) return;
 
+        // NumberPopManager への通知
+        // ブル以外の「数字部分」に当たった時だけ数字演出を出す
+        if (popManager != null && !result.isOut && !result.isRipple)
+        {
+            popManager.NotifyHit(result.baseScore, result.score);
+        }
+
         if (result.shouldHighlight)
         {
             SpawnHighlight(result);
@@ -184,6 +193,7 @@ public class DartsBoard : MonoBehaviour
 
         int index = (int)(correctedAngle / 18);
         int baseScore = scoreMap[index];
+        res.baseScore = baseScore;
 
         if (distance < bullRadius)
         {
