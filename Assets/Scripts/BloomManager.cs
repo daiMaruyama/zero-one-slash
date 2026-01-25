@@ -33,7 +33,7 @@ public class BloomManager : MonoBehaviour
         if (volume != null && volume.profile.TryGet(out bloom)) // ‚±‚±‚àˆá‚¤
         {
             defaultIntensity = bloom.intensity.value;
-            defaultColor = bloom.tint.value; // šColor‚¶‚á‚È‚­‚ÄTint
+            defaultColor = bloom.tint.value; // Color‚¶‚á‚È‚­‚ÄTint
         }
     }
 
