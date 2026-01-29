@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 public class TitleController : MonoBehaviour
 {
     [Header("必須設定")]
-    public string gameSceneName = "GameScene";
+    public string gameSceneName = "Main";
 
     [Header("UI制御")]
     public GameObject settingsWindow;
