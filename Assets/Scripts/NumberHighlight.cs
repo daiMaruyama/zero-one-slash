@@ -1,28 +1,28 @@
-using System.Collections;
+ï»¿using System.Collections;
 using TMPro;
 using UnityEngine;
 
 public class NumberHighlight : MonoBehaviour
 {
-    [Header("QÆ")]
-    [SerializeField] TMP_Text scoreText;     // UI‚Å‚à3D‚Å‚àOK
-    [SerializeField] GameObject background;  // •CircleiŒ³”š‚ğ‰B‚·ŠWj
+    [Header("å‚ç…§")]
+    [SerializeField] TMP_Text scoreText;     // UIã§ã‚‚3Dã§ã‚‚OK
+    [SerializeField] GameObject background;  // é»’Circleï¼ˆå…ƒæ•°å­—ã‚’éš ã™è“‹ï¼‰
 
-    [Header("•’i‚Ì•\¦iƒfƒtƒHƒ‹ƒgj")]
+    [Header("æ™®æ®µã®è¡¨ç¤ºï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆï¼‰")]
     [SerializeField] Color defaultColor = Color.white;
     [SerializeField, Range(0f, 1f)] float defaultAlpha = 1f;
 
-    [Header("‰‰oİ’è")]
+    [Header("æ¼”å‡ºè¨­å®š")]
     [SerializeField] float animDuration = 0.35f;
     [SerializeField] float displayTime = 1.2f;
     [SerializeField] float fadeOutTime = 0.25f;
     [SerializeField] float scaleAmount = 1.5f;
 
-    [Header("•‚‚©‚Ñã‚ª‚èŠ´i”CˆÓj")]
+    [Header("æµ®ã‹ã³ä¸ŠãŒã‚Šæ„Ÿï¼ˆä»»æ„ï¼‰")]
     [SerializeField] bool useFloatOffset = true;
     [SerializeField] Vector3 floatLocalOffset = new Vector3(0f, 0f, -0.05f);
 
-    [Header("ƒtƒF[ƒhƒAƒEƒg‚Ìk‚İi¬‚³‚·‚¬‚é‚Æˆá˜aŠ´j")]
+    [Header("ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¢ã‚¦ãƒˆæ™‚ã®ç¸®ã¿ï¼ˆå°ã•ã™ãã‚‹ã¨é•å’Œæ„Ÿï¼‰")]
     [SerializeField] float fadeScaleTo = 0.95f;
 
     Vector3 _textBaseScale;
@@ -32,15 +32,15 @@ public class NumberHighlight : MonoBehaviour
 
     void Awake()
     {
-        // •Circle‚ÍuŒ³‰æ‘œ‚Ì”š‚ğ‰B‚·v–Ú“I‚È‚Ì‚ÅíON
+        // é»’Circleã¯ã€Œå…ƒç”»åƒã®æ•°å­—ã‚’éš ã™ã€ç›®çš„ãªã®ã§å¸¸æ™‚ON
         if (background != null) background.SetActive(true);
 
         CacheBaseTransform();
 
-        // Init‚ª‘–‚ç‚È‚¢ƒP[ƒX‚Å‚à0–ŒÌ‚ç‚È‚¢‚æ‚¤•œŒ³
+        // InitãŒèµ°ã‚‰ãªã„ã‚±ãƒ¼ã‚¹ã§ã‚‚0äº‹æ•…ã‚‰ãªã„ã‚ˆã†å¾©å…ƒ
         ResolveOriginalNumberIfNeeded();
 
-        // •’i‚Ì”š‚ğ•\¦‚µ‚Ä‚¨‚­i‚±‚±‚ª‘å–j
+        // æ™®æ®µã®æ•°å­—ã‚’è¡¨ç¤ºã—ã¦ãŠãï¼ˆã“ã“ãŒå¤§äº‹ï¼‰
         ApplyDefaultVisuals();
     }
 
@@ -57,7 +57,7 @@ public class NumberHighlight : MonoBehaviour
     {
         if (_originalNumber > 0) return;
 
-        // ‡@ –¼‘O‚ª "Number_20" Œ`®‚È‚ç‚»‚±‚©‚ç•œŒ³
+        // â‘  åå‰ãŒ "Number_20" å½¢å¼ãªã‚‰ãã“ã‹ã‚‰å¾©å…ƒ
         const string prefix = "Number_";
         if (name.StartsWith(prefix))
         {
@@ -69,14 +69,14 @@ public class NumberHighlight : MonoBehaviour
             }
         }
 
-        // ‡A ‚·‚Å‚ÉƒeƒLƒXƒg‚ª“ü‚Á‚Ä‚é‚È‚ç‚»‚±‚©‚ç•œŒ³
+        // â‘¡ ã™ã§ã«ãƒ†ã‚­ã‚¹ãƒˆãŒå…¥ã£ã¦ã‚‹ãªã‚‰ãã“ã‹ã‚‰å¾©å…ƒ
         if (scoreText != null && int.TryParse(scoreText.text, out int fromText) && fromText > 0)
         {
             _originalNumber = fromText;
             return;
         }
 
-        // ‡B ÅŒã‚Ì•ÛŒ¯
+        // â‘¢ æœ€å¾Œã®ä¿é™º
         _originalNumber = 20;
     }
 
@@ -110,7 +110,7 @@ public class NumberHighlight : MonoBehaviour
 
         if (!gameObject.activeInHierarchy)
         {
-            // e‚ªOFF‚Å‰‰o‚Å‚«‚È‚¢ê‡‚Ì•ÛŒ¯
+            // è¦ªãŒOFFã§æ¼”å‡ºã§ããªã„å ´åˆã®ä¿é™º
             if (scoreText != null)
             {
                 scoreText.text = score.ToString();
@@ -124,7 +124,7 @@ public class NumberHighlight : MonoBehaviour
             StopCoroutine(_animationCoroutine);
             _animationCoroutine = null;
 
-            // “r’†’†’f‚µ‚Ä‚à•’i•\¦‚É–ß‚·
+            // é€”ä¸­ä¸­æ–­ã—ã¦ã‚‚æ™®æ®µè¡¨ç¤ºã«æˆ»ã™
             ApplyDefaultVisuals();
         }
 
@@ -145,7 +145,7 @@ public class NumberHighlight : MonoBehaviour
 
         scoreText.gameObject.SetActive(true);
 
-        // ‰Šú‰»i“–‚½‚Á‚½ƒXƒRƒA‚ğ•\¦‚µ‚Ä•‚‚©‚Ñã‚ª‚èŠJnj
+        // åˆæœŸåŒ–ï¼ˆå½“ãŸã£ãŸã‚¹ã‚³ã‚¢ã‚’è¡¨ç¤ºã—ã¦æµ®ã‹ã³ä¸ŠãŒã‚Šé–‹å§‹ï¼‰
         scoreText.text = score.ToString();
         scoreText.color = WithAlpha(targetColor, 0f);
         scoreText.transform.localScale = _textBaseScale * 0.9f;
@@ -154,7 +154,7 @@ public class NumberHighlight : MonoBehaviour
         Vector3 fromPos = _textBaseLocalPos;
         Vector3 toPos = useFloatOffset ? (_textBaseLocalPos + floatLocalOffset) : _textBaseLocalPos;
 
-        // ===== oŒ»i’e‚Ş{•‚‚­{ƒtƒF[ƒhƒCƒ“j =====
+        // ===== å‡ºç¾ï¼ˆå¼¾ã‚€ï¼‹æµ®ãï¼‹ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³ï¼‰ =====
         float elapsed = 0f;
         while (elapsed < animDuration)
         {
@@ -176,10 +176,10 @@ public class NumberHighlight : MonoBehaviour
         scoreText.transform.localPosition = toPos;
         scoreText.color = WithAlpha(targetColor, 1f);
 
-        // ===== •\¦ =====
+        // ===== è¡¨ç¤º =====
         yield return new WaitForSeconds(displayTime);
 
-        // ===== Á‚¦‚éi©‘R‚ÉŒ³‚Ì”š‚Ö–ß‚·j =====
+        // ===== æ¶ˆãˆã‚‹ï¼ˆè‡ªç„¶ã«å…ƒã®æ•°å­—ã¸æˆ»ã™ï¼‰ =====
         elapsed = 0f;
         Color startColor = scoreText.color;
         Color endColor = WithAlpha(defaultColor, defaultAlpha);
@@ -190,7 +190,7 @@ public class NumberHighlight : MonoBehaviour
             float t01 = Mathf.Clamp01(elapsed / fadeOutTime);
             float ease = SmoothStep01(t01);
 
-            // g“§–¾‚ÉÁ‚·h ‚¶‚á‚È‚­ g•’i‚ÌŒ©‚¦•û‚É–ß‚éh ‚Ù‚¤‚ªˆá˜aŠ´­‚È‚¢
+            // â€œé€æ˜ã«æ¶ˆã™â€ ã˜ã‚ƒãªã â€œæ™®æ®µã®è¦‹ãˆæ–¹ã«æˆ»ã‚‹â€ ã»ã†ãŒé•å’Œæ„Ÿå°‘ãªã„
             scoreText.color = Color.Lerp(startColor, endColor, ease);
 
             scoreText.transform.localScale = Vector3.Lerp(_textBaseScale, _textBaseScale * fadeScaleTo, ease);
@@ -199,7 +199,7 @@ public class NumberHighlight : MonoBehaviour
             yield return null;
         }
 
-        // ÅŒã‚É•’i•\¦‚ÖŠ®‘S•œ‹A
+        // æœ€å¾Œã«æ™®æ®µè¡¨ç¤ºã¸å®Œå…¨å¾©å¸°
         ApplyDefaultVisuals();
 
         _animationCoroutine = null;
