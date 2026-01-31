@@ -11437,6 +11437,7 @@ MonoBehaviour:
   newRecordPanel: {fileID: 740999626}
   debugForceShowNameInput: 0
   debugOpenKey: 27
+  rankingCheckTimeoutSeconds: 0.5
   effectSingle: {fileID: 1835355836541019294, guid: 4790206eadc817b4196e071640e653af, type: 3}
   effectDouble: {fileID: 8762405910555896786, guid: fcb74f28d107e284e80af037bfec14ca, type: 3}
   effectTriple: {fileID: 162584487599433031, guid: 39f852c28f9c3fd45a427c24f3564ba7, type: 3}

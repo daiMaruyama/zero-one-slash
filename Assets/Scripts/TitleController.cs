@@ -28,41 +28,45 @@ public class TitleController : MonoBehaviour
     public float closeSpeed = 0.35f;
     public float shakePower = 50f;
 
-    // 自動生成変数
+    [Header("ゲート設定（InGameと揃える）")]
+    public float gateOpenDistance = 1500f;
+    public Color gateColor = Color.black;
+    public Color neonTopColor = Color.cyan;
+    public Color neonBottomColor = Color.magenta;
+
     RectTransform gateTop;
     RectTransform gateBottom;
     CanvasGroup flashPanel;
     RectTransform shakeTarget;
 
+    GameObject transitionCanvasGO;
     AudioSource audioSource;
+
     Vector2 endPosTop, endPosBottom;
     bool isTransitioning = false;
 
     void Start()
     {
         audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
         if (AudioManager.instance != null) audioSource.volume = AudioManager.instance.seVolume;
 
         GenerateStylishGates();
 
-        // テキストを透明状態で初期化
         if (touchText != null)
         {
-            Color c = touchText.color;
-            c.a = 0f;
-            touchText.color = c;
+            Color c = touchText.color; c.a = 0f; touchText.color = c;
         }
         if (versionText != null)
         {
-            Color c = versionText.color;
-            c.a = 0f;
-            versionText.color = c;
+            Color c = versionText.color; c.a = 0f; versionText.color = c;
         }
 
         if (slashTop != null && slashBottom != null)
         {
             endPosTop = slashTop.anchoredPosition;
             endPosBottom = slashBottom.anchoredPosition;
+
             slashTop.anchoredPosition = new Vector2(-2800, endPosTop.y);
             slashBottom.anchoredPosition = new Vector2(2800, endPosBottom.y);
 
@@ -72,53 +76,50 @@ public class TitleController : MonoBehaviour
 
     void Update()
     {
-        // すでに遷移中なら何もしない
         if (isTransitioning) return;
 
-        // 設定ウィンドウが開いているなら何もしない
-        if (settingsWindow != null && settingsWindow.activeSelf)
-        {
-            return;
-        }
+        if (settingsWindow != null && settingsWindow.activeSelf) return;
 
-        // クリック（タップ）されたら
         if (Input.GetMouseButtonDown(0))
         {
-            // もしクリックした場所にUI（ボタンなど）があったら、ここで中断！
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-            {
-                return;
-            }
-
-            // UIじゃなければ、ゲーム開始演出へ
+            if (IsPointerOverUI()) return;
             StartGateTransition();
         }
+    }
+
+    bool IsPointerOverUI()
+    {
+        if (EventSystem.current == null) return false;
+
+#if UNITY_IOS || UNITY_ANDROID
+        if (Input.touchCount > 0)
+            return EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
+#endif
+        return EventSystem.current.IsPointerOverGameObject();
     }
 
     void OnDestroy()
     {
         transform.DOKill();
+
         if (gateTop != null) gateTop.DOKill();
         if (gateBottom != null) gateBottom.DOKill();
         if (flashPanel != null) flashPanel.DOKill();
         if (touchText != null) touchText.DOKill();
         if (versionText != null) versionText.DOKill();
+
+        if (transitionCanvasGO != null) Destroy(transitionCanvasGO);
     }
 
     void PlayEntrance()
     {
-        // ロゴ入場
         slashTop.DOAnchorPos(endPosTop, 0.5f).SetEase(Ease.OutExpo).SetDelay(0.2f);
         slashBottom.DOAnchorPos(endPosBottom, 0.5f).SetEase(Ease.OutExpo).SetDelay(0.4f)
-            .OnComplete(() =>
-            {
-                FadeInUI();
-            });
+            .OnComplete(FadeInUI);
     }
 
     void FadeInUI()
     {
-        // テキストフェードイン
         if (touchText != null)
         {
             touchText.DOFade(1f, 1.0f).OnComplete(() =>
@@ -134,7 +135,10 @@ public class TitleController : MonoBehaviour
 
     void StartGateTransition()
     {
+        if (gateTop == null || gateBottom == null) return;
+
         isTransitioning = true;
+
         if (seDecide != null) audioSource.PlayOneShot(seDecide);
 
         if (touchText != null)
@@ -144,76 +148,95 @@ public class TitleController : MonoBehaviour
             touchText.transform.DOScale(1.2f, 0.05f).SetLoops(2, LoopType.Yoyo);
         }
 
-        float overlap = 50f;
+        gateTop.DOKill();
+        gateBottom.DOKill();
 
-        gateTop.DOAnchorPosY(-overlap, closeSpeed).SetEase(Ease.InExpo);
+        Sequence seq = DOTween.Sequence().SetLink(gameObject);
 
-        gateBottom.DOAnchorPosY(overlap, closeSpeed).SetEase(Ease.InExpo)
-            .OnComplete(() =>
+        seq.Append(gateTop.DOAnchorPos(Vector2.zero, closeSpeed).SetEase(Ease.InExpo));
+        seq.Join(gateBottom.DOAnchorPos(Vector2.zero, closeSpeed).SetEase(Ease.InExpo));
+
+        seq.OnComplete(() =>
+        {
+            if (seSlam != null) audioSource.PlayOneShot(seSlam);
+
+            if (shakeTarget != null)
+                shakeTarget.DOShakeAnchorPos(0.5f, shakePower, 20, 90, false, true);
+
+            if (flashPanel != null)
             {
-                if (seSlam != null) audioSource.PlayOneShot(seSlam);
+                flashPanel.alpha = 1f;
+                flashPanel.DOFade(0f, 0.5f).SetLink(gameObject);
+            }
 
-                if (shakeTarget != null)
-                    shakeTarget.DOShakeAnchorPos(0.5f, shakePower, 20, 90, false, true);
-
-                if (flashPanel != null)
-                {
-                    flashPanel.alpha = 1f;
-                    flashPanel.DOFade(0f, 0.5f);
-                }
-
-                //DOVirtual.DelayedCall(0.5f, () => SceneManager.LoadScene(gameSceneName));
-                DOVirtual.DelayedCall(0.5f, () =>
-                {
-                    DestroyDontDestroyGameManager();   // 追加
-                    SceneManager.LoadScene(gameSceneName);
-                });
-            });
+            DOVirtual.DelayedCall(0.5f, () =>
+            {
+                DestroyDontDestroyGameManager();
+                SceneManager.LoadScene(gameSceneName);
+            }).SetLink(gameObject);
+        });
     }
 
     void GenerateStylishGates()
     {
-        GameObject canvasGO = new GameObject("TransitionCanvas");
-        Canvas transCanvas = canvasGO.AddComponent<Canvas>();
+        GameObject exist = GameObject.Find("TransitionCanvas");
+        if (exist != null) Destroy(exist);
+
+        transitionCanvasGO = new GameObject("TransitionCanvas");
+
+        Canvas transCanvas = transitionCanvasGO.AddComponent<Canvas>();
         transCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        transCanvas.sortingOrder = 999;
-        CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+        transCanvas.sortingOrder = 1000;
+
+        CanvasScaler scaler = transitionCanvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
 
         GameObject containerGO = new GameObject("ShakeContainer");
-        containerGO.transform.SetParent(canvasGO.transform, false);
+        containerGO.transform.SetParent(transitionCanvasGO.transform, false);
+
         shakeTarget = containerGO.AddComponent<RectTransform>();
-        shakeTarget.anchorMin = Vector2.zero; shakeTarget.anchorMax = Vector2.one;
+        shakeTarget.anchorMin = Vector2.zero;
+        shakeTarget.anchorMax = Vector2.one;
         shakeTarget.sizeDelta = Vector2.zero;
+        shakeTarget.anchoredPosition = Vector2.zero;
 
         float width = 3500f;
         float height = 2000f;
 
-        gateTop = CreateGate(shakeTarget, "Auto_GateTop", Color.black, width, height);
+        float rad = slashAngle * Mathf.Deg2Rad;
+        Vector2 dir = new Vector2(-Mathf.Sin(rad), Mathf.Cos(rad));
+
+        gateTop = CreateGate(shakeTarget, "Auto_GateTop", gateColor, width, height);
         gateTop.pivot = new Vector2(0.5f, 0f);
         gateTop.anchorMin = new Vector2(0.5f, 0.5f);
         gateTop.anchorMax = new Vector2(0.5f, 0.5f);
-        gateTop.anchoredPosition = new Vector2(0, 1500);
         gateTop.localRotation = Quaternion.Euler(0, 0, slashAngle);
-        CreateNeonLine(gateTop, Color.cyan, new Vector2(0.5f, 0f));
+        gateTop.anchoredPosition = dir * gateOpenDistance;
+        CreateNeonLine(gateTop, neonTopColor, new Vector2(0.5f, 0f));
 
-        gateBottom = CreateGate(shakeTarget, "Auto_GateBottom", Color.black, width, height);
+        gateBottom = CreateGate(shakeTarget, "Auto_GateBottom", gateColor, width, height);
         gateBottom.pivot = new Vector2(0.5f, 1f);
         gateBottom.anchorMin = new Vector2(0.5f, 0.5f);
         gateBottom.anchorMax = new Vector2(0.5f, 0.5f);
-        gateBottom.anchoredPosition = new Vector2(0, -1500);
         gateBottom.localRotation = Quaternion.Euler(0, 0, slashAngle);
-        CreateNeonLine(gateBottom, Color.magenta, new Vector2(0.5f, 1f));
+        gateBottom.anchoredPosition = -dir * gateOpenDistance;
+        CreateNeonLine(gateBottom, neonBottomColor, new Vector2(0.5f, 1f));
 
         GameObject flashGO = new GameObject("Auto_FlashPanel");
         flashGO.transform.SetParent(transCanvas.transform, false);
+        flashGO.transform.SetAsLastSibling();
+
         Image img = flashGO.AddComponent<Image>();
         img.color = Color.white;
         img.raycastTarget = false;
+
         RectTransform rt = flashGO.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
-        rt.sizeDelta = Vector2.zero;
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
 
         flashPanel = flashGO.AddComponent<CanvasGroup>();
         flashPanel.alpha = 0f;
@@ -223,9 +246,11 @@ public class TitleController : MonoBehaviour
     {
         GameObject go = new GameObject(name);
         go.transform.SetParent(parent, false);
+
         Image img = go.AddComponent<Image>();
         img.color = col;
         img.raycastTarget = false;
+
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(w, h);
         return rt;
@@ -235,10 +260,12 @@ public class TitleController : MonoBehaviour
     {
         GameObject go = new GameObject("NeonLine");
         go.transform.SetParent(parent, false);
+
         Image img = go.AddComponent<Image>();
         img.color = col;
-        RectTransform rt = go.GetComponent<RectTransform>();
+        img.raycastTarget = false;
 
+        RectTransform rt = go.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0, pivot.y);
         rt.anchorMax = new Vector2(1, pivot.y);
         rt.pivot = pivot;
@@ -248,13 +275,10 @@ public class TitleController : MonoBehaviour
 
     void DestroyDontDestroyGameManager()
     {
-        // DDoL領域にいる GameManager だけ消す
         foreach (var gm in FindObjectsOfType<GameManager>())
         {
             if (gm.gameObject.scene.name == "DontDestroyOnLoad")
-            {
                 Destroy(gm.gameObject);
-            }
         }
     }
 }

@@ -40,6 +40,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] bool debugForceShowNameInput = false;
     [SerializeField] KeyCode debugOpenKey = KeyCode.F2;
 
+    [Header("ランキング判定タイムアウト")]
+    [SerializeField] float rankingCheckTimeoutSeconds = 1.2f;
+
     [Header("エフェクト設定")]
     public GameObject effectSingle;
     public GameObject effectDouble;
@@ -65,7 +68,6 @@ public class GameManager : MonoBehaviour
     [Header("ボード参照（Bullズレ対策）")]
     [SerializeField] Transform boardTransform;
 
-    // 外部参照用（フォーカス用）
     public int RemainingScore => currentTargetScore;
     public int ThrowsLeft => throwsLeft;
 
@@ -76,8 +78,8 @@ public class GameManager : MonoBehaviour
     bool isGameActive;
     bool isInputBlocked;
 
-    // このプレイで新記録だったか（リザルト表示用）
     bool _isNewRecordThisRun = false;
+    bool _isGameOver = false;
 
     public bool CanThrow => isGameActive && !isInputBlocked;
 
@@ -130,7 +132,6 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // デバッグ：debugForceShowNameInput がONの時だけ任意キーで出す
         if (debugForceShowNameInput && Input.GetKeyDown(debugOpenKey))
         {
             Debug.Log("[GM] Debug open name input");
@@ -328,18 +329,23 @@ public class GameManager : MonoBehaviour
 
     async void GameOver()
     {
+        if (_isGameOver) return;
+        _isGameOver = true;
+
         isGameActive = false;
         isInputBlocked = true;
 
         if (resultPanel != null) resultPanel.SetActive(false);
 
-        int topN = 10; // ←ここを5にすればTop5判定になる
+        int topN = 10;
         bool shouldOpenNameInput = debugForceShowNameInput;
 
         if (!shouldOpenNameInput && RankingManager.instance != null)
         {
-            shouldOpenNameInput = await RankingManager.instance.ShouldOpenNameInputAsync(totalGameScore, topN);
+            shouldOpenNameInput = await SafeShouldOpenNameInputAsync(totalGameScore, topN, rankingCheckTimeoutSeconds);
         }
+
+        _isNewRecordThisRun = shouldOpenNameInput;
 
         if (shouldOpenNameInput && newRecordPanel != null)
         {
@@ -351,6 +357,31 @@ public class GameManager : MonoBehaviour
         }
 
         ShowResultPanel();
+    }
+
+    async Task<bool> SafeShouldOpenNameInputAsync(int score, int topN, float timeoutSeconds)
+    {
+        if (RankingManager.instance == null)
+            return false;
+
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+            return false;
+
+        try
+        {
+            Task<bool> task = RankingManager.instance.ShouldOpenNameInputAsync(score, topN);
+            Task finished = await Task.WhenAny(task, Task.Delay((int)(Mathf.Max(0.05f, timeoutSeconds) * 1000f)));
+
+            if (finished != task)
+                return false;
+
+            return await task;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[GM] ShouldOpenNameInput failed: {e.Message}");
+            return false;
+        }
     }
 
     void AnimateResultScore()
@@ -369,30 +400,25 @@ public class GameManager : MonoBehaviour
             })
             .OnComplete(() =>
             {
-                // 途中でDestroyされてたら何もしない（DOTween SafeMode対策）
                 if (resultScoreText == null) return;
 
                 if (seResult != null && AudioManager.instance != null)
                     AudioManager.instance.PlaySE(seResult);
 
-                // スコア文字ちょい気持ちよく
                 resultScoreText.transform.DOScale(1.2f, 0.1f)
                     .SetLoops(2, LoopType.Yoyo)
                     .SetLink(resultScoreText.gameObject);
 
-                // 本当に新記録だった時だけ表示（あなたのフラグ運用）
                 if (_isNewRecordThisRun)
                 {
                     resultScoreText.text += "\n<color=red>NEW RECORD!!</color>";
                 }
 
-                // ランキング結果表示（送信した時だけ・古い情報は出さない）
                 if (RankingManager.instance != null)
                 {
-                    int rank = RankingManager.instance.LastSubmittedRank; // 0が1位
+                    int rank = RankingManager.instance.LastSubmittedRank;
                     int lastScore = (int)RankingManager.instance.LastSubmittedScore;
 
-                    // 今回送ったスコアと一致してる時だけ表示（前回のrankが残る事故防止）
                     if (rank >= 0 && lastScore == totalGameScore)
                     {
                         if (rank == 0)
@@ -403,7 +429,6 @@ public class GameManager : MonoBehaviour
                         {
                             resultScoreText.text += $"\n<color=cyan>RANK #{rank + 1}</color>";
                         }
-                        // rank >= 10 は表示しない（Top10入りだけ見せたい想定）
                     }
                 }
 
@@ -412,7 +437,6 @@ public class GameManager : MonoBehaviour
                     var submissionUI = resultPanel.GetComponentInChildren<ResultPanelController>();
                     if (submissionUI != null) submissionUI.SetupSubmission(totalGameScore);
                 }
-
             })
             .SetLink(resultScoreText.gameObject);
     }
@@ -511,6 +535,8 @@ public class GameManager : MonoBehaviour
         }
 
         if (resultPanel != null) resultPanel.SetActive(false);
+
+        _isNewRecordThisRun = true;
 
         newRecordPanel.Open(score, () =>
         {
