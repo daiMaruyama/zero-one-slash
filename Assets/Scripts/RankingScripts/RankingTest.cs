@@ -1,35 +1,24 @@
 using UnityEngine;
 
-/// <summary>
-/// RankingManagerの動作を検証するためのテスト用クラス
-/// </summary>
 public class RankingTest : MonoBehaviour
 {
-    void Update()
+    async void Start()
     {
-        // Sキーでスコア「100」を「TestUser」として送信
-        if (Input.GetKeyDown(KeyCode.S))
+        // 送信テスト（スコア 123）
+        await RankingManager.instance.SubmitScoreWithUpdateName(123, "TestPlayer");
+
+        // 取得テスト
+        var list = await RankingManager.instance.GetRanking(10);
+
+        if (list == null)
         {
-            Debug.Log("[Test] Sending score...");
-            _ = RankingManager.instance.SubmitScoreWithUpdateName(100, "TestUser");
+            Debug.Log("ランキング取得失敗");
+            return;
         }
 
-        // Gキーで現在のランキングTOP5を取得してログに表示
-        if (Input.GetKeyDown(KeyCode.G))
+        foreach (var e in list)
         {
-            Debug.Log("[Test] Fetching ranking...");
-            FetchAndLogRanking();
-        }
-    }
-
-    async void FetchAndLogRanking()
-    {
-        var scores = await RankingManager.instance.GetRanking(5);
-        if (scores == null) return;
-
-        foreach (var entry in scores)
-        {
-            Debug.Log($"Rank: {entry.Rank + 1} | Name: {entry.PlayerName} | Score: {entry.Score}");
+            Debug.Log($"Rank:{e.Rank + 1} Name:{e.PlayerName} Score:{(int)e.Score}");
         }
     }
 }
