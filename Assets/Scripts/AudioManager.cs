@@ -16,6 +16,8 @@ public class AudioManager : MonoBehaviour
     const string KEY_BGM = "CFG_BGM_VOL";
     const string KEY_SE = "CFG_SE_VOL";
 
+    public AudioSource BgmSource => bgmSource;
+
     void Awake()
     {
         if (instance == null)
@@ -76,6 +78,19 @@ public class AudioManager : MonoBehaviour
         // PlayOneShotは音を重ねて鳴らせる
         seSource.PlayOneShot(clip);
     }
+
+    // pitch操作（GameManagerから呼ぶ用）
+    public void SetBgmPitch(float pitch)
+    {
+        if (bgmSource == null) return;
+        bgmSource.pitch = pitch;
+    }
+
+    public void ResetBgmPitch()
+    {
+        SetBgmPitch(1.0f);
+    }
+
 
     public void SetBgmVolume(float volume)
     {
