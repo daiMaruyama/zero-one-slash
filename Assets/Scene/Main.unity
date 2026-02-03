@@ -11434,6 +11434,8 @@ MonoBehaviour:
   scoreText: {fileID: 133458478}
   resultPanel: {fileID: 1423494453}
   resultScoreText: {fileID: 843418732}
+  resultStatusText: {fileID: 0}
+  resultRankText: {fileID: 0}
   newRecordPanel: {fileID: 740999626}
   debugForceShowNameInput: 0
   debugOpenKey: 27
@@ -11455,6 +11457,12 @@ MonoBehaviour:
   seResult: {fileID: 0}
   bgmMain: {fileID: 0}
   baseBgmVolume: 0.5
+  useBgmPitch: 1
+  pitchStartTimeRatio: 0.4
+  pitchMax: 1.12
+  pitchFollowSpeed: 2.5
+  pitchReturnDuration: 5
+  pitchReturnEase: 9
   boardTransform: {fileID: 1425858696}
 --- !u!4 &1475186619
 Transform:
