@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
+using Unity.Services.Leaderboards.Models;
 
 public class RankingPanelController : MonoBehaviour
 {
@@ -7,23 +9,23 @@ public class RankingPanelController : MonoBehaviour
     [SerializeField] GameObject entryPrefab;
     [SerializeField] Text infoText;
 
-    public async void Refresh()
+    public async void Refresh(int limit = 10)
     {
         if (infoText != null) infoText.text = "LOADING...";
 
         if (entryContainer != null)
         {
-            foreach (Transform child in entryContainer)
-                Destroy(child.gameObject);
+            for (int i = entryContainer.childCount - 1; i >= 0; i--)
+                Destroy(entryContainer.GetChild(i).gameObject);
         }
 
         if (RankingManager.instance == null)
         {
-            if (infoText != null) infoText.text = "NO MANAGER";
+            if (infoText != null) infoText.text = "RANKING SYSTEM NOT FOUND";
             return;
         }
 
-        var results = await RankingManager.instance.GetRanking(10);
+        var results = await RankingManager.instance.GetRanking(limit);
 
         if (results == null || results.Count == 0)
         {
@@ -33,15 +35,19 @@ public class RankingPanelController : MonoBehaviour
 
         if (infoText != null) infoText.text = "";
 
-        foreach (var entry in results)
+        foreach (LeaderboardEntry entry in results)
         {
-            var rowObj = Instantiate(entryPrefab, entryContainer);
-            var row = rowObj.GetComponent<RankingEntryRow>();
+            if (entryPrefab == null || entryContainer == null) break;
 
+            var go = Instantiate(entryPrefab, entryContainer);
+            var row = go.GetComponent<RankingEntryRow>();
             if (row != null)
             {
+                int rank = entry.Rank + 1;
                 string name = string.IsNullOrEmpty(entry.PlayerName) ? "Unknown" : entry.PlayerName;
-                row.SetData(entry.Rank + 1, name, (int)entry.Score);
+                int score = (int)entry.Score;
+
+                row.SetData(rank, name, score);
             }
         }
     }
