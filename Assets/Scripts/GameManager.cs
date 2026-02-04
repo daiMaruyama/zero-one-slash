@@ -111,6 +111,9 @@ public class GameManager : MonoBehaviour
 
     public bool CanThrow => isGameActive && !isInputBlocked;
 
+    /// <summary>
+    /// ゲーム開始時の初期化を行い、開始演出を再生する。
+    /// </summary>
     void Start()
     {
         if (bgmMain != null)
@@ -166,6 +169,9 @@ public class GameManager : MonoBehaviour
         isInputBlocked = false;
     }
 
+    /// <summary>
+    /// ゲーム中のタイマー更新、UI更新、終了判定を行う。
+    /// </summary>
     void Update()
     {
         if (debugForceShowNameInput && Input.GetKeyDown(debugOpenKey)) OpenNameInputPanel_Debug(totalGameScore);
@@ -199,6 +205,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 次のターゲットスコアをランダムに設定し、投げ数をリセットする。
+    /// </summary>
     public void NextQuestion()
     {
         currentTargetScore = questionList[Random.Range(0, questionList.Length)];
@@ -207,6 +216,9 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
+    /// <summary>
+    /// ダーツのヒット結果を処理し、続行・クリア・バースト・ミスを判定する。
+    /// </summary>
     public void ProcessHit(string areaCode, int hitScore, Vector2 hitPosition)
     {
         if (!isGameActive || isInputBlocked) return;
@@ -268,6 +280,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ミス時の演出とUI更新を行う。
+    /// </summary>
     IEnumerator MissProcessRoutine(Vector3 effectPos)
     {
         if (effectMiss != null) Instantiate(effectMiss, effectPos, Quaternion.identity);
@@ -280,6 +295,9 @@ public class GameManager : MonoBehaviour
         else { UpdateUI(); isInputBlocked = false; }
     }
 
+    /// <summary>
+    /// ヒットエリアに応じたエフェクトを再生する。
+    /// </summary>
     void PlayHitEffect(string areaCode, Vector3 pos)
     {
         GameObject prefab = effectSingle;
@@ -289,6 +307,9 @@ public class GameManager : MonoBehaviour
         if (prefab != null) Instantiate(prefab, pos, Quaternion.identity);
     }
 
+    /// <summary>
+    /// クリア時のスコア加算と演出を行う。
+    /// </summary>
     void WinProcess(string finishingArea)
     {
         int pointsGet = (finishingArea.StartsWith("D") || finishingArea.StartsWith("T") || finishingArea.Contains("Bull")) ? 500 : 100;
@@ -303,6 +324,9 @@ public class GameManager : MonoBehaviour
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
+    /// <summary>
+    /// 失敗時の演出を遅延付きで再生し、次の問題へ遷移する。
+    /// </summary>
     IEnumerator FailProcessRoutine(string reason, float delay, AudioClip clip)
     {
         if (delay > 0) yield return new WaitForSeconds(delay);
@@ -311,6 +335,9 @@ public class GameManager : MonoBehaviour
         StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
     }
 
+    /// <summary>
+    /// ゲーム終了時の結果表示とランキング入力判定を行う。
+    /// </summary>
     async void GameOver()
     {
         //if (AudioManager.instance != null) AudioManager.instance.ResetBgmPitch();
@@ -340,6 +367,9 @@ public class GameManager : MonoBehaviour
         ShowResultPanel();
     }
 
+    /// <summary>
+    /// ランキング入力を開くべきかをタイムアウト付きで判定する。
+    /// </summary>
     async Task<bool> SafeShouldOpenNameInputAsync(int score, int topN, float timeoutSeconds)
     {
         if (RankingManager.instance == null || Application.internetReachability == NetworkReachability.NotReachable) return false;
@@ -352,6 +382,9 @@ public class GameManager : MonoBehaviour
         catch { return false; }
     }
 
+    /// <summary>
+    /// リザルト画面のスコアカウントアップ演出を行う。
+    /// </summary>
     void AnimateResultScore()
     {
         if (resultScoreText == null) return;
@@ -408,12 +441,18 @@ public class GameManager : MonoBehaviour
 
     public void RetryGame() => SceneManager.LoadScene(SceneManager.GetActiveScene().name);
 
+    /// <summary>
+    /// 投げ間隔のクールダウン後に入力を再開する。
+    /// </summary>
     IEnumerator CooldownRoutine(float duration)
     {
         yield return new WaitForSeconds(duration);
         if (isGameActive) isInputBlocked = false;
     }
 
+    /// <summary>
+    /// 次の問題へ進むまでの待機時間を挟んでカメラをリセットする。
+    /// </summary>
     IEnumerator NextQuestionDelayRoutine(float duration)
     {
         yield return new WaitForSeconds(duration);
@@ -421,6 +460,9 @@ public class GameManager : MonoBehaviour
         if (isGameActive) NextQuestion();
     }
 
+    /// <summary>
+    /// ヒットエリアに応じたSEを複数回再生し、再生時間を返す。
+    /// </summary>
     float PlayHitSound(string areaCode)
     {
         AudioClip clip = seSingle;
@@ -433,6 +475,9 @@ public class GameManager : MonoBehaviour
         return (count * 0.08f) + 0.1f;
     }
 
+    /// <summary>
+    /// 効果音を指定回数だけ時間差で再生する。
+    /// </summary>
     IEnumerator PlaySoundRoutine(AudioClip clip, int count)
     {
         if (clip == null) yield break;
@@ -443,6 +488,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ターゲット/スコア/残り投数のUIを更新する。
+    /// </summary>
     void UpdateUI()
     {
         if (targetText != null) targetText.SetValue("TARGET: ", currentTargetScore);
@@ -452,6 +500,9 @@ public class GameManager : MonoBehaviour
 
     void ShowResultPanel() { if (resultPanel != null) { resultPanel.SetActive(true); AnimateResultScore(); } }
 
+    /// <summary>
+    /// デバッグ用に名前入力パネルを強制表示する。
+    /// </summary>
     void OpenNameInputPanel_Debug(int score)
     {
         if (newRecordPanel == null) return;
@@ -460,6 +511,9 @@ public class GameManager : MonoBehaviour
         newRecordPanel.Open(score, () => ShowResultPanel());
     }
 
+    /// <summary>
+    /// 3投で到達可能なスコアのみを含む問題リストを作成する。
+    /// </summary>
     int[] BuildQuestionList()
     {
         var list = new List<int>();
@@ -471,6 +525,9 @@ public class GameManager : MonoBehaviour
         return list.Count == 0 ? new int[] { 32 } : list.ToArray();
     }
 
+    /// <summary>
+    /// 残り時間に応じてBGMのピッチを徐々に上げる。
+    /// </summary>
     void UpdateBgmPitch()
     {
         if (!useBgmPitch) return;
@@ -494,6 +551,10 @@ public class GameManager : MonoBehaviour
 
         AudioManager.instance.SetBgmPitch(_currentPitch);
     }
+
+    /// <summary>
+    /// ゲーム終了時にBGMピッチをベースへ滑らかに戻す。
+    /// </summary>
     void StartBgmPitchReturnSmooth()
     {
         if (!useBgmPitch) return;
