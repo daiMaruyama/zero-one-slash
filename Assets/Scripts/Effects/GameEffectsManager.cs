@@ -16,6 +16,15 @@ public class GameEffectsManager : MonoBehaviour
     public Volume globalVolume;
     ChromaticAberration chromatic;
 
+    // 同じパネルを色違いで使う（Inspectorで調整できる）
+    [Header("Failパネル色（Serializeで差し替え）")]
+    [SerializeField] Color missPanelColor = new Color(1f, 0.35f, 0.35f);
+    [SerializeField] Color noOutPanelColor = new Color(1f, 0.30f, 0.45f);
+
+    [Header("Failパネル強さ（Serializeで差し替え）")]
+    [SerializeField] float missPanelIntensity = 0.18f;
+    [SerializeField] float noOutPanelIntensity = 0.22f;
+
     void Awake()
     {
         instance = this;
@@ -39,6 +48,32 @@ public class GameEffectsManager : MonoBehaviour
 
         // グリッチ表現 (短く)
         PlayGlitch(0.2f);
+    }
+
+    // MISS(OUT) 演出（BUSTより軽め）
+    public void PlayMissEffect()
+    {
+        FlashPanel(missPanelColor, missPanelIntensity);
+
+        if (canvasRect != null)
+        {
+            canvasRect.DOShakeAnchorPos(0.18f, 18f, 30, 90, false, true);
+        }
+
+        PlayGlitch(0.10f);
+    }
+
+    // NO OUT（足りない）演出（MISSより少し強め）
+    public void PlayNoOutEffect()
+    {
+        FlashPanel(noOutPanelColor, noOutPanelIntensity);
+
+        if (canvasRect != null)
+        {
+            canvasRect.DOShakeAnchorPos(0.25f, 24f, 35, 90, false, true);
+        }
+
+        PlayGlitch(0.12f);
     }
 
     // 勝利演出

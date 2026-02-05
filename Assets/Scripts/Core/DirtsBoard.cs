@@ -57,7 +57,7 @@ public class DartsBoard : MonoBehaviour
     [SerializeField] float guidePulseMinMul = 0.55f;       // 最低の明るさ倍率
     [SerializeField] float guidePulseMaxMul = 1.15f;       // 最大の明るさ倍率
     [SerializeField] float guidePulsePhaseJitter = 0.35f;  // ばらけさせる（同時に点滅しない）
-    
+
     [Header("ガイド表示調整")]
     [SerializeField] float guideAppearanceDelay = 1.5f; // 何秒待つか
     float _guideTimer = 0f;                            // 経過時間用
@@ -116,6 +116,12 @@ public class DartsBoard : MonoBehaviour
         if (Camera.main == null) return;
 
         Vector2 tapPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        // ★追加：ボード外クリックは何も起きない（UI以外は反応しない）
+        // これで「盤面外でカードが飛ぶ/無駄判定」が消える
+        float distance = Vector2.Distance(tapPos, (Vector2)transform.position);
+        if (distance > missRadius) return;
+
         ThrowCard(tapPos);
     }
 

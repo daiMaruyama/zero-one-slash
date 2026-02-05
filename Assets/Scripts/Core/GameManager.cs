@@ -71,10 +71,14 @@ public class GameManager : MonoBehaviour
     public AudioClip seOuterBull;
     public AudioClip seInnerBull;
     public AudioClip seWin;
-    public AudioClip seFail;
-    public AudioClip seMiss;
+    public AudioClip seFail;     // いままで通り：BUST用（そのまま）
+    public AudioClip seMiss;     // いままで通り：OUT(MISS)用（そのまま）
     public AudioClip seResult;
     public AudioClip bgmMain;
+
+    // 3投使い切って足りない（NO OUT）専用
+    // 既存のフィールド名を一切変えず、追加だけするのでInspectorは壊れません
+    public AudioClip seNoOut;
 
     [Range(0f, 1f)] public float baseBgmVolume = 0.5f;
 
@@ -88,13 +92,20 @@ public class GameManager : MonoBehaviour
 
     Tween _pitchReturnTween;
 
-
     AudioSource _bgmSource;
     float _bgmBasePitch = 1.0f;
     float _currentPitch = 1.0f;
 
     [Header("ボード参照")]
     [SerializeField] Transform boardTransform;
+
+    [Header("名前入力中は隠す（モーダル化）")]
+    [SerializeField] GameObject[] hideWhileNameInput;
+
+    // 触れなくしたい物がある場合だけ（例：ボードCollider / 投げ処理Script 等）
+    [SerializeField] Behaviour[] disableWhileNameInput;
+
+    bool _isNameInputOpen;
 
     public int RemainingScore => currentTargetScore;
     public int ThrowsLeft => throwsLeft;
@@ -110,6 +121,11 @@ public class GameManager : MonoBehaviour
     bool _isGameOver = false;
 
     public bool CanThrow => isGameActive && !isInputBlocked;
+
+    // 表示文言はここで統一（バーっぽく短く）
+    const string TextMiss = "MISS";
+    const string TextBust = "BUST";
+    const string TextNoOut = "NO OUT"; // ← TURN END の代替（自然）
 
     /// <summary>
     /// ゲーム開始時の初期化を行い、開始演出を再生する。
@@ -256,7 +272,7 @@ public class GameManager : MonoBehaviour
         if (tempScore < 0) // バースト
         {
             if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayBustEffect();
-            StartCoroutine(FailProcessRoutine("BUST", 0f, seFail));
+            StartCoroutine(FailProcessRoutine(TextBust, 0f, seFail)); // seFailはBUST専用として扱う
         }
         else if (tempScore == 0) // クリア
         {
@@ -275,8 +291,16 @@ public class GameManager : MonoBehaviour
             UpdateUI();
             float soundDuration = PlayHitSound(areaCode);
 
-            if (throwsLeft <= 0) StartCoroutine(FailProcessRoutine("TURN END", soundDuration, seFail));
-            else StartCoroutine(CooldownRoutine(throwCooldown));
+            // 投げ切ったらTURN ENDではなく NO OUT（音も別）
+            if (throwsLeft <= 0)
+            {
+                if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
+                StartCoroutine(FailProcessRoutine(TextNoOut, soundDuration, seNoOut));
+            }
+            else
+            {
+                StartCoroutine(CooldownRoutine(throwCooldown));
+            }
         }
     }
 
@@ -285,14 +309,26 @@ public class GameManager : MonoBehaviour
     /// </summary>
     IEnumerator MissProcessRoutine(Vector3 effectPos)
     {
+        // MISS専用の軽いパネル（BUSTと同じoverlayを色違いで使う）
+        if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayMissEffect();
+
         if (effectMiss != null) Instantiate(effectMiss, effectPos, Quaternion.identity);
         if (seMiss != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seMiss);
-        if (targetText != null) targetText.SetText("MISS");
+        if (targetText != null) targetText.SetText(TextMiss);
 
         yield return new WaitForSeconds(0.4f);
 
-        if (throwsLeft <= 0) StartCoroutine(FailProcessRoutine("TURN END", 0f, seFail));
-        else { UpdateUI(); isInputBlocked = false; }
+        // ここも投げ切りなら NO OUT（音と表示）
+        if (throwsLeft <= 0)
+        {
+            if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
+            StartCoroutine(FailProcessRoutine(TextNoOut, 0f, seNoOut));
+        }
+        else
+        {
+            UpdateUI();
+            isInputBlocked = false;
+        }
     }
 
     /// <summary>
@@ -361,9 +397,20 @@ public class GameManager : MonoBehaviour
 
         if (shouldOpenNameInput && newRecordPanel != null)
         {
-            newRecordPanel.Open(totalGameScore, () => ShowResultPanel());
+            // 名前入力中は背面を隠す/無効化して、見た目と操作を整理する
+            SetNameInputOpen(true);
+
+            newRecordPanel.Open(totalGameScore, () =>
+            {
+                // 入力が終わったら元に戻してリザルトへ
+                SetNameInputOpen(false);
+                ShowResultPanel();
+            });
             return;
         }
+
+        // 念のため：名前入力しないルートでも戻しておく
+        SetNameInputOpen(false);
         ShowResultPanel();
     }
 
@@ -507,8 +554,16 @@ public class GameManager : MonoBehaviour
     {
         if (newRecordPanel == null) return;
         if (resultPanel != null) resultPanel.SetActive(false);
+
         _isNewRecordThisRun = true;
-        newRecordPanel.Open(score, () => ShowResultPanel());
+
+        SetNameInputOpen(true);
+
+        newRecordPanel.Open(score, () =>
+        {
+            SetNameInputOpen(false);
+            ShowResultPanel();
+        });
     }
 
     /// <summary>
@@ -580,5 +635,28 @@ public class GameManager : MonoBehaviour
             )
             .SetEase(pitchReturnEase)
             .SetUpdate(true); // timeScale=0 でも動く（保険）
+    }
+    void SetNameInputOpen(bool isOpen)
+    {
+        if (_isNameInputOpen == isOpen) return;
+        _isNameInputOpen = isOpen;
+
+        if (hideWhileNameInput != null)
+        {
+            for (int i = 0; i < hideWhileNameInput.Length; i++)
+            {
+                var go = hideWhileNameInput[i];
+                if (go != null) go.SetActive(!isOpen);
+            }
+        }
+
+        if (disableWhileNameInput != null)
+        {
+            for (int i = 0; i < disableWhileNameInput.Length; i++)
+            {
+                var b = disableWhileNameInput[i];
+                if (b != null) b.enabled = !isOpen;
+            }
+        }
     }
 }

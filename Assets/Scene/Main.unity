@@ -11446,16 +11446,17 @@ MonoBehaviour:
   effectBull: {fileID: 362261158077530393, guid: 20fda529c996a334da7fd65b48ea40df, type: 3}
   effectMiss: {fileID: 5238538877814813142, guid: 47096eff328e11a418ace7db2d72aa97, type: 3}
   popupTextPrefab: {fileID: 0}
-  seSingle: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
-  seDouble: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
+  seSingle: {fileID: 8300000, guid: 1036a6d3a35ca6945bc59d8e3e3120c8, type: 3}
+  seDouble: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
   seTriple: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
   seOuterBull: {fileID: 8300000, guid: 88f42ee35d152064ea0a3c4e9c0a18e7, type: 3}
   seInnerBull: {fileID: 8300000, guid: 88f42ee35d152064ea0a3c4e9c0a18e7, type: 3}
   seWin: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
   seFail: {fileID: 8300000, guid: b3df74b2481b32d428cee864adbbbab8, type: 3}
-  seMiss: {fileID: 0}
+  seMiss: {fileID: 8300000, guid: 9edab7a966a13d540bc07fe9cc4794ae, type: 3}
   seResult: {fileID: 0}
   bgmMain: {fileID: 0}
+  seNoOut: {fileID: 8300000, guid: 59d8fdf2e1d8c384280b81f28fc97a65, type: 3}
   baseBgmVolume: 0.5
   useBgmPitch: 1
   pitchStartTimeRatio: 0.4
@@ -11464,6 +11465,10 @@ MonoBehaviour:
   pitchReturnDuration: 5
   pitchReturnEase: 9
   boardTransform: {fileID: 1425858696}
+  hideWhileNameInput:
+  - {fileID: 1425858694}
+  - {fileID: 64964647}
+  disableWhileNameInput: []
 --- !u!4 &1475186619
 Transform:
   m_ObjectHideFlags: 0
@@ -13696,6 +13701,10 @@ MonoBehaviour:
   overlayRed: {fileID: 1502203195}
   canvasRect: {fileID: 494705945}
   globalVolume: {fileID: 231778716}
+  missPanelColor: {r: 1, g: 0.8509433, b: 0.8509433, a: 1}
+  noOutPanelColor: {r: 1, g: 1, b: 1, a: 0}
+  missPanelIntensity: 0.18
+  noOutPanelIntensity: 0.22
 --- !u!4 &1990737039
 Transform:
   m_ObjectHideFlags: 0
