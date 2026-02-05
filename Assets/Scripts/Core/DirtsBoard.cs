@@ -117,7 +117,7 @@ public class DartsBoard : MonoBehaviour
 
         Vector2 tapPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        // ★追加：ボード外クリックは何も起きない（UI以外は反応しない）
+        // ボード外クリックは何も起きない（UI以外は反応しない）
         // これで「盤面外でカードが飛ぶ/無駄判定」が消える
         float distance = Vector2.Distance(tapPos, (Vector2)transform.position);
         if (distance > missRadius) return;
