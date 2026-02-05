@@ -71,8 +71,8 @@ public class GameManager : MonoBehaviour
     public AudioClip seOuterBull;
     public AudioClip seInnerBull;
     public AudioClip seWin;
-    public AudioClip seFail;     // いままで通り：BUST用（そのまま）
-    public AudioClip seMiss;     // いままで通り：OUT(MISS)用（そのまま）
+    public AudioClip seFail;      // いままで通り：BUST用（そのまま）
+    public AudioClip seMiss;      // いままで通り：OUT(MISS)用（そのまま）
     public AudioClip seResult;
     public AudioClip bgmMain;
 
@@ -106,6 +106,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] Behaviour[] disableWhileNameInput;
 
     bool _isNameInputOpen;
+    bool _isResultOpen;
 
     public int RemainingScore => currentTargetScore;
     public int ThrowsLeft => throwsLeft;
@@ -402,15 +403,15 @@ public class GameManager : MonoBehaviour
 
             newRecordPanel.Open(totalGameScore, () =>
             {
-                // 入力が終わったら元に戻してリザルトへ
-                SetNameInputOpen(false);
+                // 入力が終わったらリザルトへ
+                // 要望によりリザルト中も背面を隠したいので SetNameInputOpen(false) は呼びません
                 ShowResultPanel();
             });
             return;
         }
 
-        // 念のため：名前入力しないルートでも戻しておく
-        SetNameInputOpen(false);
+        // 名前入力しないルートでも、リザルト表示中は背面を隠すように変更
+        SetNameInputOpen(true);
         ShowResultPanel();
     }
 
@@ -487,6 +488,7 @@ public class GameManager : MonoBehaviour
     }
 
     public void RetryGame() => SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    public void GoTitle() => SceneManager.LoadScene("Title");
 
     /// <summary>
     /// 投げ間隔のクールダウン後に入力を再開する。
@@ -561,7 +563,7 @@ public class GameManager : MonoBehaviour
 
         newRecordPanel.Open(score, () =>
         {
-            SetNameInputOpen(false);
+            // 要望によりリザルト中も背面を隠したいので SetNameInputOpen(false) は呼びません
             ShowResultPanel();
         });
     }
@@ -595,7 +597,7 @@ public class GameManager : MonoBehaviour
             float ratio = Mathf.Clamp01(currentTime / timeLimit); // 1 -> 0
             if (ratio <= pitchStartTimeRatio)
             {
-                float t = 1f - (ratio / pitchStartTimeRatio);     // 0 -> 1
+                float t = 1f - (ratio / pitchStartTimeRatio);      // 0 -> 1
                 targetPitch = Mathf.Lerp(_bgmBasePitch, pitchMax, t);
             }
         }
