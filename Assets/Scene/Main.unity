@@ -9032,7 +9032,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 'ThrowLeft:'
+  m_Text: 'THROWLEFT:'
 --- !u!222 &975945092
 CanvasRenderer:
   m_ObjectHideFlags: 0
