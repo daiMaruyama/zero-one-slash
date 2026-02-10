@@ -128,6 +128,69 @@ public class GameManager : MonoBehaviour
     const string TextBust = "BUST";
     const string TextNoOut = "NO OUT"; // ← TURN END の代替（自然）
 
+    // Streak（ちょい回復 + GREAT 3回で+1秒ドン）
+
+    [Header("Streak")]
+    [SerializeField] bool useStreak = true;
+
+    [SerializeField] float timeHealWin = 0.2f;          // WINでちょい回復
+    [SerializeField] float timeHealGreat = 0.35f;       // GREATでちょい回復
+    [SerializeField] int greatBankGoal = 3;             // GREAT何回でドン回復
+    [SerializeField] float bankBonusBase = 1.0f;        // ドン回復（基本）
+    [SerializeField] float bankBonusStreak10 = 1.5f;    // streak>=10のドン回復
+    [SerializeField] float bankBonusStreak20 = 2.0f;    // streak>=20のドン回復
+
+    [Header("Streak UI")]
+    [SerializeField] Text streakText;                 // 常駐STREAK表示（任意）
+    [SerializeField] GameObject timePopupPrefab;      // TimePopupPrefab
+    [SerializeField] RectTransform timePopupAnchor;   // TIME付近のアンカー
+    [SerializeField] bool hideStreakWhenZero = true;
+
+    int _streak = 0;
+    int _greatBank = 0;
+
+    void ResetStreak()
+    {
+        _greatBank = 0;
+        SetStreak(0); // UIも更新する
+    }
+
+    bool IsGreatArea(string areaCode)
+    {
+        if (string.IsNullOrEmpty(areaCode)) return false;
+        return areaCode.StartsWith("D") || areaCode.StartsWith("T") || areaCode.Contains("Bull");
+    }
+
+    void ApplyStreakTimeHeal(string areaCode)
+    {
+        if (!useStreak) return;
+        if (!isGameActive) return;
+
+        bool isGreat = IsGreatArea(areaCode);
+
+        // streak加算（表示も更新）
+        SetStreak(_streak + (isGreat ? 2 : 1));
+
+        // 毎回ちょい回復（Popupも出す）
+        AddTimeWithPopup(isGreat ? timeHealGreat : timeHealWin);
+
+        // GREATだけbankでドン回復
+        if (!isGreat) return;
+
+        _greatBank++;
+        if (_greatBank < Mathf.Max(1, greatBankGoal)) return;
+
+        _greatBank = 0;
+
+        float bonus = bankBonusBase;
+        if (_streak >= 20) 
+            bonus = bankBonusStreak20;
+        else if (_streak >= 10) 
+            bonus = bankBonusStreak10;
+
+        AddTimeWithPopup(bonus);
+    }
+
     /// <summary>
     /// ゲーム開始時の初期化を行い、開始演出を再生する。
     /// </summary>
@@ -165,6 +228,8 @@ public class GameManager : MonoBehaviour
         currentTime = timeLimit;
         isGameActive = false;
         isInputBlocked = true;
+
+        ResetStreak();
 
         // リスト生成して開始
         questionList = BuildQuestionList();
@@ -272,6 +337,8 @@ public class GameManager : MonoBehaviour
 
         if (tempScore < 0) // バースト
         {
+            ResetStreak();
+
             if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayBustEffect();
             StartCoroutine(FailProcessRoutine(TextBust, 0f, seFail)); // seFailはBUST専用として扱う
         }
@@ -295,6 +362,8 @@ public class GameManager : MonoBehaviour
             // 投げ切ったらTURN ENDではなく NO OUT（音も別）
             if (throwsLeft <= 0)
             {
+                ResetStreak();
+
                 if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
                 StartCoroutine(FailProcessRoutine(TextNoOut, soundDuration, seNoOut));
             }
@@ -310,6 +379,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     IEnumerator MissProcessRoutine(Vector3 effectPos)
     {
+        ResetStreak();
+
         // MISS専用の軽いパネル（BUSTと同じoverlayを色違いで使う）
         if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayMissEffect();
 
@@ -349,6 +420,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     void WinProcess(string finishingArea)
     {
+        // streak回復（寿司打）
+        ApplyStreakTimeHeal(finishingArea);
+
         int pointsGet = (finishingArea.StartsWith("D") || finishingArea.StartsWith("T") || finishingArea.Contains("Bull")) ? 500 : 100;
         string winMessage = pointsGet == 500 ? "GREAT WIN!!" : "WIN!!";
 
@@ -377,14 +451,14 @@ public class GameManager : MonoBehaviour
     /// </summary>
     async void GameOver()
     {
-        //if (AudioManager.instance != null) AudioManager.instance.ResetBgmPitch();
-        //_currentPitch = _bgmBasePitch;
         StartBgmPitchReturnSmooth();
 
         if (_isGameOver) return;
         _isGameOver = true;
         isGameActive = false;
         isInputBlocked = true;
+
+        ResetStreak();
 
         if (resultPanel != null) resultPanel.SetActive(false);
 
@@ -456,21 +530,32 @@ public class GameManager : MonoBehaviour
                     int rank = RankingManager.instance.LastSubmittedRank;
                     double best = RankingManager.instance.LastSubmittedScore;
 
-                    // ステータステキスト（新記録等）
+                    bool isRankIn = (rank >= 0 && rank < 10);
+
                     if (resultStatusText != null)
                     {
-                        if (totalGameScore >= (int)best && totalGameScore > 0) { resultStatusText.text = "NEW RECORD!!"; resultStatusText.color = Color.red; }
-                        else if (_isNewRecordThisRun) { resultStatusText.text = "RANK IN!!"; resultStatusText.color = new Color(1f, 0.5f, 0f); }
-
-                        if (resultStatusText.text != "")
+                        if (isRankIn || _isNewRecordThisRun)
                         {
-                            resultStatusText.transform.localScale = Vector3.zero;
-                            resultStatusText.transform.DOScale(1f, 0.5f).SetEase(Ease.OutBack);
+                            if (totalGameScore >= (int)best && (int)best > 0)
+                            {
+                                resultStatusText.text = "NEW RECORD!!";
+                                resultStatusText.color = Color.red;
+                            }
+                            else
+                            {
+                                resultStatusText.text = "RANK IN!!";
+                                resultStatusText.color = new Color(1f, 0.5f, 0f);
+                            }
+
+                            if (resultStatusText.text != "")
+                            {
+                                resultStatusText.transform.localScale = Vector3.zero;
+                                resultStatusText.transform.DOScale(1f, 0.5f).SetEase(Ease.OutBack);
+                            }
                         }
                     }
 
-                    // 順位テキスト
-                    if (resultRankText != null && rank >= 0 && rank < 10)
+                    if (resultRankText != null && isRankIn)
                     {
                         resultRankText.text = rank == 0 ? "BEST OF BEST!!" : $"RANKING: #{rank + 1}";
                         resultRankText.color = rank == 0 ? Color.yellow : Color.cyan;
@@ -563,7 +648,6 @@ public class GameManager : MonoBehaviour
 
         newRecordPanel.Open(score, () =>
         {
-            // 要望によりリザルト中も背面を隠したいので SetNameInputOpen(false) は呼びません
             ShowResultPanel();
         });
     }
@@ -638,6 +722,7 @@ public class GameManager : MonoBehaviour
             .SetEase(pitchReturnEase)
             .SetUpdate(true); // timeScale=0 でも動く（保険）
     }
+
     void SetNameInputOpen(bool isOpen)
     {
         if (_isNameInputOpen == isOpen) return;
@@ -661,4 +746,48 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+    void SetStreak(int value)
+    {
+        _streak = Mathf.Max(0, value);
+
+        if (streakText == null) return;
+
+        if (hideStreakWhenZero && _streak <= 0)
+        {
+            streakText.gameObject.SetActive(false);
+            return;
+        }
+
+        streakText.gameObject.SetActive(true);
+        streakText.text = $"STREAK {_streak}";
+    }
+
+    // 秒を足して、PopUpも出す（バランスは後で調整すればOK）
+    void AddTimeWithPopup(float addSeconds)
+    {
+        if (addSeconds <= 0f) return;
+
+        currentTime += addSeconds; // 最大時間なしでOKならクランプしない
+        ShowTimePopup(addSeconds);
+    }
+
+    void ShowTimePopup(float addSeconds)
+    {
+        if (timePopupPrefab == null || timePopupAnchor == null) return;
+
+        GameObject go = Instantiate(timePopupPrefab, timePopupAnchor);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            rt.anchoredPosition = Vector2.zero;
+            rt.localRotation = Quaternion.identity;
+            rt.localScale = Vector3.one;
+        }
+
+        string msg = $"+{addSeconds:0.0}s";
+
+        var popup = go.GetComponent<TimePopupText>();
+        if (popup != null) popup.Play(msg);
+    }
+
 }
