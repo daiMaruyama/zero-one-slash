@@ -183,9 +183,9 @@ public class GameManager : MonoBehaviour
         _greatBank = 0;
 
         float bonus = bankBonusBase;
-        if (_streak >= 20) 
+        if (_streak >= 20)
             bonus = bankBonusStreak20;
-        else if (_streak >= 10) 
+        else if (_streak >= 10)
             bonus = bankBonusStreak10;
 
         AddTimeWithPopup(bonus);
@@ -313,7 +313,27 @@ public class GameManager : MonoBehaviour
 
         if (areaCode == "OUT")
         {
-            StartCoroutine(MissProcessRoutine(effectPos));
+            // 3投目MISSは NO OUT を最優先で即出し（BUST並みの反応速度）
+            if (throwsLeft <= 0)
+            {
+                ResetStreak();
+
+                if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
+
+                // MISS演出だけは残してもOK（ただし表示は NO OUT を優先）
+                if (effectMiss != null) Instantiate(effectMiss, effectPos, Quaternion.identity);
+                if (seMiss != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seMiss);
+
+                // NO OUT を即表示・即SE
+                if (targetText != null) targetText.SetText(TextNoOut);
+                if (seNoOut != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seNoOut);
+
+                StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
+            }
+            else
+            {
+                StartCoroutine(MissProcessRoutine(effectPos));
+            }
             return;
         }
 
@@ -365,7 +385,8 @@ public class GameManager : MonoBehaviour
                 ResetStreak();
 
                 if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
-                StartCoroutine(FailProcessRoutine(TextNoOut, soundDuration, seNoOut));
+                //StartCoroutine(FailProcessRoutine(TextNoOut, soundDuration, seNoOut));
+                StartCoroutine(FailProcessRoutine(TextNoOut, 0f, seNoOut));
             }
             else
             {
@@ -390,17 +411,19 @@ public class GameManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.4f);
 
-        // ここも投げ切りなら NO OUT（音と表示）
-        if (throwsLeft <= 0)
-        {
-            if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
-            StartCoroutine(FailProcessRoutine(TextNoOut, 0f, seNoOut));
-        }
-        else
-        {
-            UpdateUI();
-            isInputBlocked = false;
-        }
+        //// ここも投げ切りなら NO OUT（音と表示）
+        //if (throwsLeft <= 0)
+        //{
+        //    if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
+        //    StartCoroutine(FailProcessRoutine(TextNoOut, 0f, seNoOut));
+        //}
+        //else
+        //{
+        //    UpdateUI();
+        //    isInputBlocked = false;
+        //}
+        UpdateUI();
+        isInputBlocked = false;
     }
 
     /// <summary>
@@ -519,7 +542,11 @@ public class GameManager : MonoBehaviour
         // スコアカウントアップ演出
         DOTween.To(() => displayScore, x => displayScore = x, totalGameScore, scoreCountDuration)
             .SetEase(scoreEaseType)
-            .OnUpdate(() => { if (resultScoreText != null) resultScoreText.text = displayScore.ToString("N0"); })
+            .OnUpdate(() =>
+            {
+                if (resultScoreText != null)
+                    resultScoreText.text = "SCORE: " + displayScore.ToString("N0");
+            })
             .OnComplete(() =>
             {
                 if (seResult != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seResult);
@@ -759,7 +786,7 @@ public class GameManager : MonoBehaviour
         }
 
         streakText.gameObject.SetActive(true);
-        streakText.text = $"STREAK {_streak}";
+        streakText.text = $"COMBO: {_streak}";
     }
 
     // 秒を足して、PopUpも出す（バランスは後で調整すればOK）
