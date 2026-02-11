@@ -4,23 +4,29 @@ using UnityEngine.EventSystems;
 
 public class TitleUIManager : MonoBehaviour
 {
-    [Header("ƒ^ƒCƒgƒ‹‚Ìƒ{ƒ^ƒ“ŒQiWindow‚Í“ü‚ê‚È‚¢j")]
+    [Header("ã‚¿ã‚¤ãƒˆãƒ«ã®ãƒœã‚¿ãƒ³ç®¡ç†(Windowã¯è§¦ã‚‰ãªã„)")]
     [SerializeField] CanvasGroup titleButtonsGroup;
 
-    [Header("İ’èƒpƒlƒ‹")]
+    [Header("è¨­å®šãƒ‘ãƒãƒ«")]
     [SerializeField] SettingsPanelAnimator settingsPanel;
     [SerializeField] Button openSettingsButton;
     [SerializeField] Button closeSettingsButton;
 
-    [Header("ƒ‰ƒ“ƒLƒ“ƒOƒpƒlƒ‹")]
+    [Header("ãƒ©ãƒ³ã‚­ãƒ³ã‚°ãƒ‘ãƒãƒ«")]
     [SerializeField] SettingsPanelAnimator rankingPanel;
     [SerializeField] Button openRankingButton;
     [SerializeField] Button closeRankingButton;
+
+    [Header("éŠã³æ–¹ãƒ‘ãƒãƒ«")]
+    [SerializeField] SettingsPanelAnimator howToPlayPanel;
+    [SerializeField] Button openHowToPlayButton;
+    [SerializeField] Button closeHowToPlayButton;
 
     void Awake()
     {
         if (settingsPanel != null) settingsPanel.HideInstant();
         if (rankingPanel != null) rankingPanel.HideInstant();
+        if (howToPlayPanel != null) howToPlayPanel.HideInstant();
 
         SetTitleButtonsVisible(true);
     }
@@ -32,6 +38,9 @@ public class TitleUIManager : MonoBehaviour
 
         if (openRankingButton != null) openRankingButton.onClick.AddListener(OpenRanking);
         if (closeRankingButton != null) closeRankingButton.onClick.AddListener(CloseRanking);
+
+        if (openHowToPlayButton != null) openHowToPlayButton.onClick.AddListener(OpenHowToPlay);
+        if (closeHowToPlayButton != null) closeHowToPlayButton.onClick.AddListener(CloseHowToPlay);
     }
 
     void OpenSettings()
@@ -80,6 +89,27 @@ public class TitleUIManager : MonoBehaviour
         SetTitleButtonsVisible(true);
     }
 
+    void OpenHowToPlay()
+    {
+        ClearSelect();
+
+        if (settingsPanel != null) settingsPanel.HideInstant();
+        if (rankingPanel != null) rankingPanel.HideInstant();
+
+        SetTitleButtonsVisible(false);
+
+        if (howToPlayPanel != null) howToPlayPanel.Open();
+    }
+
+    void CloseHowToPlay()
+    {
+        ClearSelect();
+
+        if (howToPlayPanel != null) howToPlayPanel.Close();
+
+        SetTitleButtonsVisible(true);
+    }
+
     void SetTitleButtonsVisible(bool visible)
     {
         if (titleButtonsGroup == null) return;
@@ -102,5 +132,8 @@ public class TitleUIManager : MonoBehaviour
 
         if (openRankingButton != null) openRankingButton.onClick.RemoveListener(OpenRanking);
         if (closeRankingButton != null) closeRankingButton.onClick.RemoveListener(CloseRanking);
+
+        if (openHowToPlayButton != null) openHowToPlayButton.onClick.RemoveListener(OpenHowToPlay);
+        if (closeHowToPlayButton != null) closeHowToPlayButton.onClick.RemoveListener(CloseHowToPlay);
     }
 }

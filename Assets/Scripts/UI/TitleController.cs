@@ -12,6 +12,7 @@ public class TitleController : MonoBehaviour
     [Header("UI制御")]
     public GameObject settingsWindow;
     public GameObject RankingWindow;
+    public GameObject howToPlayWindow;
 
     [Header("タイトルUI")]
     public RectTransform slashTop;
@@ -79,6 +80,7 @@ public class TitleController : MonoBehaviour
         if (isTransitioning) return;
 
         if (settingsWindow != null && settingsWindow.activeSelf) return;
+        if (howToPlayWindow != null && howToPlayWindow.activeSelf) return;
 
         if (Input.GetMouseButtonDown(0))
         {

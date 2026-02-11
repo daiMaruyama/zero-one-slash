@@ -377,19 +377,27 @@ public class GameManager : MonoBehaviour
         {
             currentTargetScore = tempScore;
             UpdateUI();
-            float soundDuration = PlayHitSound(areaCode);
 
-            // 投げ切ったらTURN ENDではなく NO OUT（音も別）
+            // 投げ切り（= NO OUT確定）は、ヒットSEを鳴らさず NO OUT を最優先で即出し
             if (throwsLeft <= 0)
             {
                 ResetStreak();
 
-                if (GameEffectsManager.instance != null) GameEffectsManager.instance.PlayNoOutEffect();
-                //StartCoroutine(FailProcessRoutine(TextNoOut, soundDuration, seNoOut));
-                StartCoroutine(FailProcessRoutine(TextNoOut, 0f, seNoOut));
+                if (GameEffectsManager.instance != null)
+                    GameEffectsManager.instance.PlayNoOutEffect();
+
+                if (targetText != null)
+                    targetText.SetText(TextNoOut);
+
+                if (seNoOut != null && AudioManager.instance != null)
+                    AudioManager.instance.PlaySE(seNoOut);
+
+                StartCoroutine(NextQuestionDelayRoutine(nextQuestionDelay));
             }
             else
             {
+                // 続行できるときだけヒットSE
+                PlayHitSound(areaCode);
                 StartCoroutine(CooldownRoutine(throwCooldown));
             }
         }
