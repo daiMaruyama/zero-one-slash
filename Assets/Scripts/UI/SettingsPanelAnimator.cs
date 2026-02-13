@@ -3,7 +3,7 @@ using DG.Tweening;
 
 public class SettingsPanelAnimator : MonoBehaviour
 {
-    [Header("QÆ")]
+    [Header("ï¿½Qï¿½ï¿½")]
     [SerializeField] CanvasGroup canvasGroup;
     [SerializeField] RectTransform panelRoot;
 
@@ -17,7 +17,7 @@ public class SettingsPanelAnimator : MonoBehaviour
     [SerializeField] Ease closeEase = Ease.InQuad;
     [SerializeField] float closeScaleTo = 0.95f;
 
-    [Header("‹¤’Ê")]
+    [Header("ï¿½ï¿½ï¿½ï¿½")]
     [SerializeField] bool useUnscaledTime = true;
 
     Tween _tween;
@@ -32,7 +32,12 @@ public class SettingsPanelAnimator : MonoBehaviour
 
     public void Open()
     {
+        // SetActive(true) may trigger Awake() which calls HideInstant() -> SetActive(false)
+        // Awake only runs once, so calling SetActive(true) again is safe
         gameObject.SetActive(true);
+        if (!gameObject.activeSelf)
+            gameObject.SetActive(true);
+
         KillTween();
 
         float from = Mathf.Max(0.01f, openScaleFrom);
@@ -46,7 +51,7 @@ public class SettingsPanelAnimator : MonoBehaviour
 
         if (panelRoot != null)
         {
-            // ‚±‚±‚Å‹­§•œŠˆiscale 0 ŒÅ’è‚ğE‚·j
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Å‹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iscale 0 ï¿½Å’ï¿½ï¿½ï¿½Eï¿½ï¿½ï¿½j
             panelRoot.localScale = Vector3.one * from;
         }
 
@@ -97,7 +102,7 @@ public class SettingsPanelAnimator : MonoBehaviour
 
         if (panelRoot != null)
         {
-            panelRoot.localScale = Vector3.one; // 0‚É‚µ‚È‚¢i–ŒÌ–h~j
+            panelRoot.localScale = Vector3.one; // 0ï¿½É‚ï¿½ï¿½È‚ï¿½ï¿½iï¿½ï¿½ï¿½Ì–hï¿½~ï¿½j
         }
 
         gameObject.SetActive(false);

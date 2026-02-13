@@ -25,7 +25,17 @@ public class RankingPanelController : MonoBehaviour
             return;
         }
 
-        var results = await RankingManager.instance.GetRanking(limit);
+        List<LeaderboardEntry> results;
+        try
+        {
+            results = await RankingManager.instance.GetRanking(limit);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[Ranking] Refresh failed: {e.Message}");
+            if (infoText != null) infoText.text = "OFFLINE";
+            return;
+        }
 
         if (results == null || results.Count == 0)
         {
@@ -40,11 +50,18 @@ public class RankingPanelController : MonoBehaviour
             if (entryPrefab == null || entryContainer == null) break;
 
             var go = Instantiate(entryPrefab, entryContainer);
+            go.SetActive(true);
             var row = go.GetComponent<RankingEntryRow>();
             if (row != null)
             {
                 int rank = entry.Rank + 1;
-                string name = string.IsNullOrEmpty(entry.PlayerName) ? "Unknown" : entry.PlayerName;
+                string raw = entry.PlayerName;
+                if (!string.IsNullOrEmpty(raw))
+                {
+                    int hashIdx = raw.LastIndexOf('#');
+                    if (hashIdx > 0) raw = raw.Substring(0, hashIdx);
+                }
+                string name = string.IsNullOrEmpty(raw) ? "Unknown" : raw;
                 int score = (int)entry.Score;
 
                 row.SetData(rank, name, score);

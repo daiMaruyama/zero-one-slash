@@ -9,15 +9,9 @@ public class TitleController : MonoBehaviour
     [Header("必須設定")]
     public string gameSceneName = "Main";
 
-    [Header("UI制御")]
-    public GameObject settingsWindow;
-    public GameObject RankingWindow;
-    public GameObject howToPlayWindow;
-
     [Header("タイトルUI")]
     public RectTransform slashTop;
     public RectTransform slashBottom;
-    public Text touchText;
     public Text versionText;
 
     [Header("音声")]
@@ -54,10 +48,6 @@ public class TitleController : MonoBehaviour
 
         GenerateStylishGates();
 
-        if (touchText != null)
-        {
-            Color c = touchText.color; c.a = 0f; touchText.color = c;
-        }
         if (versionText != null)
         {
             Color c = versionText.color; c.a = 0f; versionText.color = c;
@@ -75,29 +65,13 @@ public class TitleController : MonoBehaviour
         }
     }
 
-    void Update()
+    /// <summary>
+    /// TitleUIManagerのGAME STARTボタンから呼ばれる
+    /// </summary>
+    public void StartGame()
     {
         if (isTransitioning) return;
-
-        if (settingsWindow != null && settingsWindow.activeSelf) return;
-        if (howToPlayWindow != null && howToPlayWindow.activeSelf) return;
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            if (IsPointerOverUI()) return;
-            StartGateTransition();
-        }
-    }
-
-    bool IsPointerOverUI()
-    {
-        if (EventSystem.current == null) return false;
-
-#if UNITY_IOS || UNITY_ANDROID
-        if (Input.touchCount > 0)
-            return EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
-#endif
-        return EventSystem.current.IsPointerOverGameObject();
+        StartGateTransition();
     }
 
     void OnDestroy()
@@ -107,7 +81,6 @@ public class TitleController : MonoBehaviour
         if (gateTop != null) gateTop.DOKill();
         if (gateBottom != null) gateBottom.DOKill();
         if (flashPanel != null) flashPanel.DOKill();
-        if (touchText != null) touchText.DOKill();
         if (versionText != null) versionText.DOKill();
 
         if (transitionCanvasGO != null) Destroy(transitionCanvasGO);
@@ -122,13 +95,6 @@ public class TitleController : MonoBehaviour
 
     void FadeInUI()
     {
-        if (touchText != null)
-        {
-            touchText.DOFade(1f, 1.0f).OnComplete(() =>
-            {
-                touchText.DOFade(0f, 1.5f).SetLoops(-1, LoopType.Yoyo);
-            });
-        }
         if (versionText != null)
         {
             versionText.DOFade(1f, 1.0f);
@@ -142,13 +108,6 @@ public class TitleController : MonoBehaviour
         isTransitioning = true;
 
         if (seDecide != null) audioSource.PlayOneShot(seDecide);
-
-        if (touchText != null)
-        {
-            touchText.DOKill();
-            touchText.color = new Color(touchText.color.r, touchText.color.g, touchText.color.b, 1f);
-            touchText.transform.DOScale(1.2f, 0.05f).SetLoops(2, LoopType.Yoyo);
-        }
 
         gateTop.DOKill();
         gateBottom.DOKill();
