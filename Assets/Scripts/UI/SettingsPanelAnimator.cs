@@ -3,7 +3,7 @@ using DG.Tweening;
 
 public class SettingsPanelAnimator : MonoBehaviour
 {
-    [Header("�Q��")]
+    [Header("参照")]
     [SerializeField] CanvasGroup canvasGroup;
     [SerializeField] RectTransform panelRoot;
 
@@ -17,7 +17,7 @@ public class SettingsPanelAnimator : MonoBehaviour
     [SerializeField] Ease closeEase = Ease.InQuad;
     [SerializeField] float closeScaleTo = 0.95f;
 
-    [Header("����")]
+    [Header("共通")]
     [SerializeField] bool useUnscaledTime = true;
 
     Tween _tween;
@@ -51,7 +51,7 @@ public class SettingsPanelAnimator : MonoBehaviour
 
         if (panelRoot != null)
         {
-            // �����ŋ��������iscale 0 �Œ���E���j
+            // 初期スケールをセット（0だと壊れる防止）
             panelRoot.localScale = Vector3.one * from;
         }
 
@@ -102,7 +102,7 @@ public class SettingsPanelAnimator : MonoBehaviour
 
         if (panelRoot != null)
         {
-            panelRoot.localScale = Vector3.one; // 0�ɂ��Ȃ��i���̖h�~�j
+            panelRoot.localScale = Vector3.one; // 0にしない（崩れの防止）
         }
 
         gameObject.SetActive(false);

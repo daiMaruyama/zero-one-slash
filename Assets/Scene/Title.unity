@@ -7974,12 +7974,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 1320449374}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c42e8ea01618a7b46a433ac2d8d49e7f, type: 3}
+  m_Script: {fileID: 11500000, guid: a2b78692670a0d3428c1a1caf83e5866, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  titleLabel: "\u904A\u3073\u65B9"
   menuFont: {fileID: 12800000, guid: ca71d94c2a06452438e532eaa8f09d06, type: 3}
-  targetPanel: {fileID: 782819119}
+  howToPlayPanel: {fileID: 782819119}
+  imgRule: {fileID: 0}
+  imgScoring: {fileID: 0}
+  imgStreak: {fileID: 0}
+  imgFail: {fileID: 0}
   neonRed: {r: 1, g: 0.196, b: 0.137, a: 1}
 --- !u!1 &1329498756
 GameObject:
