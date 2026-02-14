@@ -574,7 +574,7 @@ public class GameManager : MonoBehaviour
                             if (totalGameScore >= (int)best && (int)best > 0)
                             {
                                 resultStatusText.text = "NEW RECORD!!";
-                                resultStatusText.color = Color.red;
+                                resultStatusText.color = new Color(1f, 0.196f, 0.137f);
                             }
                             else
                             {
