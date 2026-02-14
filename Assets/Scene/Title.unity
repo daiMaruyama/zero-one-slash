@@ -1496,15 +1496,15 @@ MonoBehaviour:
   slashTop: {fileID: 1867062265}
   slashBottom: {fileID: 1348967076}
   versionText: {fileID: 1441401465}
-  seDecide: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
+  seDecide: {fileID: 8300000, guid: 1036a6d3a35ca6945bc59d8e3e3120c8, type: 3}
   seSlam: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
   slashAngle: 15
-  closeSpeed: 0.75
-  shakePower: 100
+  closeSpeed: 0.3
+  shakePower: 50
   gateOpenDistance: 1500
-  gateColor: {r: 0, g: 0, b: 0, a: 1}
-  neonTopColor: {r: 0, g: 1, b: 1, a: 1}
-  neonBottomColor: {r: 1, g: 0, b: 1, a: 1}
+  gateColor: {r: 0.03, g: 0.01, b: 0.05, a: 1}
+  neonTopColor: {r: 1, g: 0.196, b: 0.137, a: 1}
+  neonBottomColor: {r: 1, g: 0.196, b: 0.137, a: 1}
 --- !u!4 &236290324
 Transform:
   m_ObjectHideFlags: 0
@@ -8840,8 +8840,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   customFont: {fileID: 12800000, guid: 4eae44bf9fbbf5847a4e98d880efc51d, type: 3}
   gateColor: {r: 0, g: 0, b: 0, a: 1}
-  neonTopColor: {r: 0, g: 1, b: 1, a: 1}
-  neonBottomColor: {r: 1, g: 0, b: 1, a: 1}
+  neonColor: {r: 1, g: 0.196, b: 0.137, a: 1}
   slashAngle: 15
   textOffset: {x: 0, y: 0}
   textSizeScale: 1.5
@@ -8850,6 +8849,8 @@ MonoBehaviour:
   goStep: 0.1
   goHold: 0.1
   gateOpenDistance: 1500
+  neonTopColor: {r: 0, g: 1, b: 1, a: 1}
+  neonBottomColor: {r: 1, g: 0, b: 1, a: 1}
 --- !u!1 &1478750850
 GameObject:
   m_ObjectHideFlags: 0
@@ -9503,7 +9504,7 @@ RectTransform:
   m_GameObject: {fileID: 1551204744}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.5, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 585740449}
@@ -10225,7 +10226,7 @@ RectTransform:
   m_GameObject: {fileID: 1652123665}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.5, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 579577327}
