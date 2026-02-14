@@ -3,33 +3,33 @@ using UnityEngine.UI;
 
 public class NewRecordPanelAutoBuilder : MonoBehaviour
 {
-    [Header("¶¬æi‹ó‚È‚ç‚±‚ÌTransform”z‰ºj")]
+    [Header("è¦ªï¼ˆãªã‘ã‚Œã°ã“ã®Transformé…ä¸‹ï¼‰")]
     [SerializeField] Transform _parent;
 
-    [Header("Œ©‚½–Ú‚ÌŠî€‚É‚·‚éTexti‹ó‚È‚çArialj")]
+    [Header("ãƒ•ã‚©ãƒ³ãƒˆå‚ç…§ç”¨Textï¼ˆãªã‘ã‚Œã°Arialï¼‰")]
     [SerializeField] Text _referenceText;
 
-    [Header("ƒpƒlƒ‹ˆÊ’uiã‚ÉŠñ‚¹‚½‚¢‚È‚çY‚ğ‘‚â‚·j")]
+    [Header("ãƒ‘ãƒãƒ«ä½ç½®ï¼ˆä¸Šã«å¯„ã›ãŸã„ãªã‚‰Yã‚’å¢—ã‚„ã™ï¼‰")]
     [SerializeField] Vector2 _panelAnchoredPos = new Vector2(0, 120);
 
-    [Header("ƒpƒlƒ‹ƒTƒCƒY")]
+    [Header("ãƒ‘ãƒãƒ«ã‚µã‚¤ã‚º")]
     [SerializeField] Vector2 _panelSize = new Vector2(980, 540);
 
-    [Header("ƒpƒlƒ‹ŒX‚«")]
+    [Header("ãƒ‘ãƒãƒ«å‚¾æ–œ")]
     [SerializeField] float _panelRotationZ = -8f;
 
-    [Header("ƒlƒIƒ“F")]
-    [SerializeField] Color _frameColor = new Color(1f, 0.2f, 1f, 1f); // ƒsƒ“ƒNŠñ‚è
-    [SerializeField] Color _bgColor = new Color(0.05f, 0.0f, 0.08f, 0.85f);
+    [Header("ãƒã‚ªãƒ³è‰²")]
+    [SerializeField] Color _frameColor = new Color(1f, 0.196f, 0.137f, 1f);
+    [SerializeField] Color _bgColor = new Color(0.03f, 0.01f, 0.05f, 0.92f);
 
-    [Header("InputFieldF")]
-    [SerializeField] Color _inputBg = new Color(1f, 0.25f, 0.8f, 0.35f);
+    [Header("InputFieldè‰²")]
+    [SerializeField] Color _inputBg = new Color(1f, 0.196f, 0.137f, 0.15f);
     [SerializeField] Color _inputText = Color.white;
     [SerializeField] Color _placeholderText = new Color(1f, 1f, 1f, 0.45f);
 
-    [Header("ƒ{ƒ^ƒ“F")]
-    [SerializeField] Color _buttonOk = new Color(0.1f, 1f, 1f, 0.35f);
-    [SerializeField] Color _buttonSkip = new Color(1f, 0.2f, 1f, 0.30f);
+    [Header("ãƒœã‚¿ãƒ³è‰²")]
+    [SerializeField] Color _buttonOk = new Color(1f, 0.196f, 0.137f, 0.25f);
+    [SerializeField] Color _buttonSkip = new Color(1f, 1f, 1f, 0.08f);
 
     [ContextMenu("Generate NewRecord Panel")]
     public void Generate()
@@ -73,7 +73,7 @@ public class NewRecordPanelAutoBuilder : MonoBehaviour
         Image bg = panelRoot.AddComponent<Image>();
         bg.color = _bgColor;
 
-        // Frame (‹^—ƒlƒIƒ“FOutline‚Å‰‚ğ‘¾‚­)
+        // Frameï¼ˆãƒã‚ªãƒ³è‰²Outlineã§æ ã‚’å¤ªãï¼‰
         Outline frameOutline = panelRoot.AddComponent<Outline>();
         frameOutline.effectColor = new Color(_frameColor.r, _frameColor.g, _frameColor.b, 0.85f);
         frameOutline.effectDistance = new Vector2(6f, -6f);
@@ -98,7 +98,7 @@ public class NewRecordPanelAutoBuilder : MonoBehaviour
         scoreRt.anchoredPosition = new Vector2(0, 70);
         scoreRt.sizeDelta = new Vector2(900, 90);
         scoreText.alignment = TextAnchor.MiddleCenter;
-        AddGlow(scoreText, new Color(1f, 0.4f, 0.85f, 0.55f), 3);
+        AddGlow(scoreText, new Color(1f, 0.196f, 0.137f, 0.55f), 3);
 
         // Message
         Text messageText = CreateText("MessageText", panelRoot.transform, "ENTER YOUR NAME", font, 26, FontStyle.Bold, new Color(1f, 1f, 1f, 0.75f));
@@ -140,7 +140,7 @@ public class NewRecordPanelAutoBuilder : MonoBehaviour
         //NewRecordPanelController controller = window.AddComponent<NewRecordPanelController>();
         //controller.Bind(windowCg, panelRt, titleText, scoreText, messageText, inputField, okButton, skipButton);
 
-        // Å‘O–Ê‚É
+        // æœ€å‰é¢ã¸
         window.transform.SetAsLastSibling();
 
         Debug.Log("[AutoBuilder] Window_NewRecord generated.");
@@ -256,7 +256,7 @@ public class NewRecordPanelAutoBuilder : MonoBehaviour
         tRt.offsetMin = Vector2.zero;
         tRt.offsetMax = Vector2.zero;
 
-        AddGlow(t, new Color(1f, 0.45f, 0.9f, 0.5f), 2);
+        AddGlow(t, new Color(1f, 0.196f, 0.137f, 0.5f), 2);
 
         return button;
     }
