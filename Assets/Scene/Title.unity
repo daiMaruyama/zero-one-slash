@@ -912,10 +912,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   menuFont: {fileID: 12800000, guid: ca71d94c2a06452438e532eaa8f09d06, type: 3}
   titleUIManager: {fileID: 236290326}
-  gridWidth: 1040
-  gridHeight: 260
-  spacingX: 10
-  spacingY: 8
+  gridWidth: 1150
+  gridHeight: 280
+  spacingX: 30
+  spacingY: 15
   neonRed: {r: 1, g: 0.196, b: 0.137, a: 1}
 --- !u!1 &118192128
 GameObject:
@@ -5421,7 +5421,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 782819114}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fbf29f4ab8a85da42880ee482fdfdd4d, type: 3}
   m_Name: 
@@ -7984,6 +7984,12 @@ MonoBehaviour:
   imgStreak: {fileID: 0}
   imgFail: {fileID: 0}
   neonRed: {r: 1, g: 0.196, b: 0.137, a: 1}
+  titleFontSize: 36
+  headerFontSize: 35
+  bodyFontSize: 35
+  navFontSize: 20
+  imageRatio: 0.58
+  bodyLineSpacing: 1.4
 --- !u!1 &1329498756
 GameObject:
   m_ObjectHideFlags: 0
@@ -8407,17 +8413,17 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1441401462}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 20.000332}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2005965196}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -758.1, y: -450}
-  m_SizeDelta: {x: 1000, y: 300}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 990, y: 499}
+  m_SizeDelta: {x: 500, y: 200}
+  m_Pivot: {x: 1, y: 1}
 --- !u!114 &1441401464
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8455,7 +8461,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 80
+    m_FontSize: 60
     m_FontStyle: 3
     m_BestFit: 0
     m_MinSize: 0
@@ -10777,7 +10783,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1812223286
 RectTransform:
   m_ObjectHideFlags: 0

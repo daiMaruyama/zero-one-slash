@@ -25,7 +25,7 @@ public class HowToPlayBuilder : MonoBehaviour
 
     [Header("フォントサイズ")]
     [SerializeField] int titleFontSize = 36;
-    [SerializeField] int headerFontSize = 28;
+    [SerializeField] int headerFontSize = 22;
     [SerializeField] int bodyFontSize = 26;
     [SerializeField] int navFontSize = 16;
 
@@ -245,8 +245,8 @@ public class HowToPlayBuilder : MonoBehaviour
         headerRT.anchorMin = new Vector2(0, 1);
         headerRT.anchorMax = new Vector2(1f - imageRatio - 0.02f, 1);
         headerRT.pivot = new Vector2(0, 1);
-        headerRT.anchoredPosition = new Vector2(0, 0);
-        headerRT.sizeDelta = new Vector2(0, 38);
+        headerRT.anchoredPosition = new Vector2(0, -20);
+        headerRT.sizeDelta = new Vector2(0, 30);
 
         Image headerBg = headerGO.AddComponent<Image>();
         headerBg.color = new Color(neonRed.r, neonRed.g, neonRed.b, 0.12f);
@@ -282,7 +282,7 @@ public class HowToPlayBuilder : MonoBehaviour
         bodyRT.anchorMax = new Vector2(1f - imageRatio - 0.02f, 1);
         bodyRT.pivot = new Vector2(0, 1);
         bodyRT.offsetMin = new Vector2(6, 0);
-        bodyRT.offsetMax = new Vector2(0, -42);
+        bodyRT.offsetMax = new Vector2(0, -54);
         bodyText.alignment = TextAnchor.UpperLeft;
         bodyText.horizontalOverflow = HorizontalWrapMode.Wrap;
         bodyText.verticalOverflow = VerticalWrapMode.Overflow;
