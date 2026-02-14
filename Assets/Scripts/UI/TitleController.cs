@@ -33,7 +33,6 @@ public class TitleController : MonoBehaviour
     RectTransform gateBottom;
     CanvasGroup flashPanel;
     RectTransform shakeTarget;
-    CanvasGroup slashStreakCG;
 
     GameObject transitionCanvasGO;
     AudioSource audioSource;
@@ -115,16 +114,6 @@ public class TitleController : MonoBehaviour
 
         Sequence seq = DOTween.Sequence().SetLink(gameObject);
 
-        // スラッシュストリーク（赤い光が斜めに一閃）
-        if (slashStreakCG != null)
-        {
-            slashStreakCG.gameObject.SetActive(true);
-            slashStreakCG.alpha = 0f;
-            seq.Append(slashStreakCG.DOFade(1f, 0.05f).SetEase(Ease.OutQuad));
-            seq.Append(slashStreakCG.DOFade(0f, 0.1f).SetEase(Ease.InQuad));
-            seq.AppendInterval(0.04f);
-        }
-
         // ゲートクローズ
         seq.Append(gateTop.DOAnchorPos(Vector2.zero, closeSpeed).SetEase(Ease.InExpo));
         seq.Join(gateBottom.DOAnchorPos(Vector2.zero, closeSpeed).SetEase(Ease.InExpo));
@@ -138,8 +127,8 @@ public class TitleController : MonoBehaviour
 
             if (flashPanel != null)
             {
-                flashPanel.alpha = 1f;
-                flashPanel.DOFade(0f, 0.5f).SetLink(gameObject);
+                flashPanel.alpha = 0.5f;
+                flashPanel.DOFade(0f, 0.4f).SetLink(gameObject);
             }
 
             DOVirtual.DelayedCall(0.5f, () =>
@@ -200,9 +189,6 @@ public class TitleController : MonoBehaviour
         gateBottom.anchoredPosition = -dir * gateOpenDistance;
         CreateNeonGlow(gateBottom, neonBottomColor, new Vector2(0.5f, 1f));
         CreateScanLines(gateBottom, height, 24);
-
-        // スラッシュストリーク
-        CreateSlashStreak(shakeTarget);
 
         // フラッシュパネル（赤みがかった白）
         GameObject flashGO = new GameObject("FlashPanel");
@@ -292,51 +278,6 @@ public class TitleController : MonoBehaviour
             rt.sizeDelta = new Vector2(0, 1);
             rt.anchoredPosition = new Vector2(0, -totalHeight * 0.5f + spacing * (i + 1));
         }
-    }
-
-    /// <summary>
-    /// スラッシュストリーク（画面を斜めに切る赤い光の一閃）
-    /// </summary>
-    void CreateSlashStreak(Transform parent)
-    {
-        GameObject go = new GameObject("SlashStreak");
-        go.transform.SetParent(parent, false);
-
-        RectTransform rt = go.GetComponent<RectTransform>() ?? go.AddComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.5f, 0.5f);
-        rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(4000, 0);
-        rt.localRotation = Quaternion.Euler(0, 0, slashAngle);
-
-        slashStreakCG = go.AddComponent<CanvasGroup>();
-        slashStreakCG.alpha = 0f;
-
-        // 外側グロー
-        GameObject glowObj = new GameObject("StreakGlow");
-        glowObj.transform.SetParent(go.transform, false);
-        Image glowImg = glowObj.AddComponent<Image>();
-        glowImg.color = new Color(neonTopColor.r, neonTopColor.g, neonTopColor.b, 0.25f);
-        glowImg.raycastTarget = false;
-        RectTransform glowRT = glowObj.GetComponent<RectTransform>();
-        glowRT.anchorMin = Vector2.zero;
-        glowRT.anchorMax = Vector2.one;
-        glowRT.offsetMin = new Vector2(0, -20);
-        glowRT.offsetMax = new Vector2(0, 20);
-
-        // コアライン
-        GameObject coreObj = new GameObject("StreakCore");
-        coreObj.transform.SetParent(go.transform, false);
-        Image coreImg = coreObj.AddComponent<Image>();
-        coreImg.color = new Color(1f, 0.92f, 0.88f, 0.95f);
-        coreImg.raycastTarget = false;
-        RectTransform coreRT = coreObj.GetComponent<RectTransform>();
-        coreRT.anchorMin = Vector2.zero;
-        coreRT.anchorMax = Vector2.one;
-        coreRT.offsetMin = new Vector2(0, -2);
-        coreRT.offsetMax = new Vector2(0, 2);
-
-        go.SetActive(false);
     }
 
     void DestroyDontDestroyGameManager()

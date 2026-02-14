@@ -84,11 +84,11 @@ public class GameStarter : MonoBehaviour
                 _announceText.transform.localScale = Vector3.one * 2.2f * textSizeScale;
                 _announceGroup.alpha = 1f;
 
-                // カウントごとの赤パルス
+                // カウントごとの赤パルス（控えめ）
                 if (_pulseGroup != null)
                 {
-                    _pulseGroup.alpha = 0.3f;
-                    _pulseGroup.DOFade(0f, 0.3f).SetEase(Ease.OutSine).SetLink(gameObject);
+                    _pulseGroup.alpha = 0.1f;
+                    _pulseGroup.DOFade(0f, 0.35f).SetEase(Ease.OutSine).SetLink(gameObject);
                 }
             });
 
@@ -123,18 +123,18 @@ public class GameStarter : MonoBehaviour
 
             onGoTiming?.Invoke();
 
-            // フラッシュ（赤みがかった白）
+            // フラッシュ（控えめ）
             if (_flashGroup != null)
             {
-                _flashGroup.alpha = 0.8f;
-                _flashGroup.DOFade(0f, 0.4f).SetEase(Ease.OutSine).SetLink(gameObject);
+                _flashGroup.alpha = 0.4f;
+                _flashGroup.DOFade(0f, 0.35f).SetEase(Ease.OutSine).SetLink(gameObject);
             }
 
-            // パルス
+            // パルス（控えめ）
             if (_pulseGroup != null)
             {
-                _pulseGroup.alpha = 0.5f;
-                _pulseGroup.DOFade(0f, 0.4f).SetEase(Ease.OutSine).SetLink(gameObject);
+                _pulseGroup.alpha = 0.18f;
+                _pulseGroup.DOFade(0f, 0.35f).SetEase(Ease.OutSine).SetLink(gameObject);
             }
         });
 
