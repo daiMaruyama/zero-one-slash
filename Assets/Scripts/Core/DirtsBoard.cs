@@ -608,4 +608,9 @@ public class DartsBoard : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, missRadius);
     }
+    public void ForceClearGuide()
+    {
+        ClearGuideHighlights(true);
+        _guideTimer = 0f;
+    }
 }

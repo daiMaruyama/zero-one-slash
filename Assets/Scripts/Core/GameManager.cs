@@ -518,6 +518,17 @@ public class GameManager : MonoBehaviour
         // 名前入力しないルートでも、リザルト表示中は背面を隠すように変更
         SetNameInputOpen(true);
         ShowResultPanel();
+
+        //// リザルトでも点滅アニメーションが残ってしまうのを防止
+        //var board = FindObjectOfType<DartsBoard>();
+        //if (board != null)
+        //{
+        //    board.ForceClearGuide();
+        //}
+        foreach (var h in FindObjectsOfType<SegmentHighlighter>())
+        {
+            h.HideGuideAndDestroy(0.1f);   // 0でもOK
+        }
     }
 
     /// <summary>
