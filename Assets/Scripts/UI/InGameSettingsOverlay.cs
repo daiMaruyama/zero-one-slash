@@ -124,7 +124,7 @@ public class InGameSettingsOverlay : MonoBehaviour
         prt.offsetMax = Vector2.zero;
 
         Image blocker = _panel.AddComponent<Image>();
-        blocker.color = new Color(0f, 0f, 0f, 0.62f);
+        blocker.color = new Color(0f, 0f, 0f, 0.35f);
 
         Button blockerBtn = _panel.AddComponent<Button>();
         blockerBtn.transition = Selectable.Transition.None;
@@ -136,10 +136,10 @@ public class InGameSettingsOverlay : MonoBehaviour
         wrt.anchorMax = new Vector2(0.5f, 0.5f);
         wrt.pivot = new Vector2(0.5f, 0.5f);
         wrt.anchoredPosition = Vector2.zero;
-        wrt.sizeDelta = new Vector2(760f, 460f);
+        wrt.sizeDelta = new Vector2(820f, 520f);
 
         Image winBg = window.AddComponent<Image>();
-        winBg.color = new Color(0.05f, 0.08f, 0.14f, 0.95f);
+        winBg.color = new Color(0.05f, 0.08f, 0.14f, 0.88f);
         Outline outline = window.AddComponent<Outline>();
         outline.effectColor = new Color(NeonRed.r, NeonRed.g, NeonRed.b, 0.4f);
         outline.effectDistance = new Vector2(2f, -2f);
@@ -166,6 +166,16 @@ public class InGameSettingsOverlay : MonoBehaviour
         lineRT.sizeDelta = new Vector2(0f, 2f);
         Image lineImg = titleLine.AddComponent<Image>();
         lineImg.color = new Color(NeonRed.r, NeonRed.g, NeonRed.b, 0.55f);
+
+
+        Button closeX = CreateTextButton(window.transform, "CloseX", "×", font);
+        RectTransform xrt = closeX.transform as RectTransform;
+        xrt.anchorMin = new Vector2(1f, 1f);
+        xrt.anchorMax = new Vector2(1f, 1f);
+        xrt.pivot = new Vector2(1f, 1f);
+        xrt.anchoredPosition = new Vector2(-18f, -14f);
+        xrt.sizeDelta = new Vector2(54f, 54f);
+        closeX.onClick.AddListener(ClosePanel);
 
         Slider bgm = CreateSlider(window.transform, "BGM", new Vector2(0, -130f), font);
         Slider se = CreateSlider(window.transform, "SE", new Vector2(0, -215f), font);
@@ -344,7 +354,7 @@ public class InGameSettingsOverlay : MonoBehaviour
     {
         if (_resultPanel != null && _resultPanel.activeInHierarchy)
         {
-            if (_isOpen || (_openButton != null && _openButton.gameObject.activeSelf))
+            if (_panel != null && _panel.activeSelf)
                 ForceClosePanel();
 
             if (_openButton != null)
