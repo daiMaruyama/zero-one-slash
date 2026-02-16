@@ -16,6 +16,7 @@ public class InGameSettingsOverlay : MonoBehaviour
     GameObject _panel;
     Button _openButton;
     bool _isOpen;
+    bool _isGameplayActive;
 
     public void Setup(Transform uiRoot)
     {
@@ -31,14 +32,20 @@ public class InGameSettingsOverlay : MonoBehaviour
 
     public void SetGameplayActive(bool active)
     {
+        _isGameplayActive = active;
         if (_openButton == null) return;
 
-        if (!active) ForceClosePanel();
+        if (!active)
+        {
+            ForceClosePanel();
+            _openButton.gameObject.SetActive(false);
+            return;
+        }
 
-        _openButton.gameObject.SetActive(active);
+        if (!_isOpen)
+            _openButton.gameObject.SetActive(true);
 
-        if (active)
-            _openButton.transform.SetAsLastSibling();
+        _openButton.transform.SetAsLastSibling();
     }
 
     public void ForceClosePanel()
@@ -47,7 +54,10 @@ public class InGameSettingsOverlay : MonoBehaviour
             _panel.SetActive(false);
 
         if (_openButton != null)
+        {
             _openButton.interactable = true;
+            _openButton.gameObject.SetActive(_isGameplayActive);
+        }
 
         if (pauseGameWhileOpen)
             Time.timeScale = 1f;
@@ -135,6 +145,16 @@ public class InGameSettingsOverlay : MonoBehaviour
         trt.anchoredPosition = new Vector2(0, -28f);
         trt.sizeDelta = new Vector2(440, 56);
         title.alignment = TextAnchor.MiddleCenter;
+
+        GameObject titleLine = CreateUIObject("TitleLine", window.transform);
+        RectTransform lineRT = titleLine.GetComponent<RectTransform>();
+        lineRT.anchorMin = new Vector2(0.08f, 1f);
+        lineRT.anchorMax = new Vector2(0.92f, 1f);
+        lineRT.pivot = new Vector2(0.5f, 1f);
+        lineRT.anchoredPosition = new Vector2(0f, -86f);
+        lineRT.sizeDelta = new Vector2(0f, 2f);
+        Image lineImg = titleLine.AddComponent<Image>();
+        lineImg.color = new Color(NeonRed.r, NeonRed.g, NeonRed.b, 0.55f);
 
         Slider bgm = CreateSlider(window.transform, "BGM", new Vector2(0, -130f), font);
         Slider se = CreateSlider(window.transform, "SE", new Vector2(0, -215f), font);
@@ -265,7 +285,7 @@ public class InGameSettingsOverlay : MonoBehaviour
     {
         GameObject go = CreateUIObject(name, parent);
         Image bg = go.AddComponent<Image>();
-        bg.color = new Color(1f, 1f, 1f, 0.08f);
+        bg.color = new Color(0.09f, 0.13f, 0.2f, 0.85f);
         Outline o = go.AddComponent<Outline>();
         o.effectColor = new Color(NeonRed.r, NeonRed.g, NeonRed.b, 0.5f);
         o.effectDistance = new Vector2(2f, -2f);
@@ -274,7 +294,7 @@ public class InGameSettingsOverlay : MonoBehaviour
         b.targetGraphic = bg;
         b.transition = Selectable.Transition.None;
 
-        Text t = CreateText("Label", go.transform, label, font, 22, FontStyle.Bold, Color.white);
+        Text t = CreateText("Label", go.transform, label, font, 22, FontStyle.BoldAndItalic, Color.white);
         RectTransform trt = t.rectTransform;
         trt.anchorMin = Vector2.zero;
         trt.anchorMax = Vector2.one;
@@ -290,6 +310,8 @@ public class InGameSettingsOverlay : MonoBehaviour
         if (_panel == null) return;
 
         _openButton.interactable = false;
+        _openButton.gameObject.SetActive(false);
+
         _panel.SetActive(true);
         _panel.transform.SetAsLastSibling();
 

@@ -303,6 +303,11 @@ public class ResultPanelBuilder : MonoBehaviour
     {
         if (button == null) return;
 
+        // 背景トーン（TitleのネオンUIに寄せる）
+        var bg = button.GetComponent<Image>();
+        if (bg != null)
+            bg.color = new Color(0.09f, 0.13f, 0.2f, 0.88f);
+
         // フレーム
         var outline = button.GetComponent<Outline>();
         if (outline == null) outline = button.gameObject.AddComponent<Outline>();
@@ -314,7 +319,7 @@ public class ResultPanelBuilder : MonoBehaviour
         if (label != null)
         {
             label.color = Color.white;
-            label.fontStyle = FontStyle.Bold;
+            label.fontStyle = FontStyle.BoldAndItalic;
             EnsureGlow(label.gameObject, NeonRed, 0.6f, 2);
         }
 
