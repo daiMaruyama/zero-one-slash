@@ -1,9 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// InGameプレイ中に常時表示するSETTINGボタンと、
-/// BGM/SE調整用の簡易設定パネルをランタイム生成する。
+/// BGM/SE調整 + Retry/Title 遷移を行う設定パネルをランタイム生成する。
 /// </summary>
 public class InGameSettingsOverlay : MonoBehaviour
 {
@@ -14,6 +15,7 @@ public class InGameSettingsOverlay : MonoBehaviour
     Transform _uiRoot;
     GameObject _panel;
     Button _openButton;
+    bool _isOpen;
 
     public void Setup(Transform uiRoot)
     {
@@ -23,6 +25,34 @@ public class InGameSettingsOverlay : MonoBehaviour
         _uiRoot = uiRoot;
         BuildOpenButton();
         BuildPanel();
+
+        SetGameplayActive(false);
+    }
+
+    public void SetGameplayActive(bool active)
+    {
+        if (_openButton == null) return;
+
+        if (!active) ForceClosePanel();
+
+        _openButton.gameObject.SetActive(active);
+
+        if (active)
+            _openButton.transform.SetAsLastSibling();
+    }
+
+    public void ForceClosePanel()
+    {
+        if (_panel != null)
+            _panel.SetActive(false);
+
+        if (_openButton != null)
+            _openButton.interactable = true;
+
+        if (pauseGameWhileOpen)
+            Time.timeScale = 1f;
+
+        _isOpen = false;
     }
 
     void BuildOpenButton()
@@ -85,7 +115,7 @@ public class InGameSettingsOverlay : MonoBehaviour
         wrt.anchorMax = new Vector2(0.5f, 0.5f);
         wrt.pivot = new Vector2(0.5f, 0.5f);
         wrt.anchoredPosition = Vector2.zero;
-        wrt.sizeDelta = new Vector2(700f, 390f);
+        wrt.sizeDelta = new Vector2(760f, 460f);
 
         Image winBg = window.AddComponent<Image>();
         winBg.color = new Color(0.05f, 0.08f, 0.14f, 0.95f);
@@ -106,8 +136,8 @@ public class InGameSettingsOverlay : MonoBehaviour
         trt.sizeDelta = new Vector2(440, 56);
         title.alignment = TextAnchor.MiddleCenter;
 
-        Slider bgm = CreateSlider(window.transform, "BGM", new Vector2(0, -135f), font);
-        Slider se = CreateSlider(window.transform, "SE", new Vector2(0, -220f), font);
+        Slider bgm = CreateSlider(window.transform, "BGM", new Vector2(0, -130f), font);
+        Slider se = CreateSlider(window.transform, "SE", new Vector2(0, -215f), font);
 
         if (bgm != null)
         {
@@ -125,14 +155,31 @@ public class InGameSettingsOverlay : MonoBehaviour
             se.onValueChanged.AddListener(v => { if (AudioManager.instance != null) AudioManager.instance.SetSeVolume(v); });
         }
 
-        Button close = CreateTextButton(window.transform, "Close", "CLOSE", font);
-        RectTransform crt = close.transform as RectTransform;
-        crt.anchorMin = new Vector2(0.5f, 0f);
-        crt.anchorMax = new Vector2(0.5f, 0f);
-        crt.pivot = new Vector2(0.5f, 0f);
-        crt.anchoredPosition = new Vector2(0f, 18f);
-        crt.sizeDelta = new Vector2(220, 58);
-        close.onClick.AddListener(ClosePanel);
+        Button retryBtn = CreateTextButton(window.transform, "Retry", "RETRY", font);
+        RectTransform rrt = retryBtn.transform as RectTransform;
+        rrt.anchorMin = new Vector2(0.5f, 0f);
+        rrt.anchorMax = new Vector2(0.5f, 0f);
+        rrt.pivot = new Vector2(1f, 0f);
+        rrt.anchoredPosition = new Vector2(-16f, 20f);
+        rrt.sizeDelta = new Vector2(240, 60);
+        retryBtn.onClick.AddListener(() =>
+        {
+            if (pauseGameWhileOpen) Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        });
+
+        Button titleBtn = CreateTextButton(window.transform, "Title", "TITLE", font);
+        RectTransform tr = titleBtn.transform as RectTransform;
+        tr.anchorMin = new Vector2(0.5f, 0f);
+        tr.anchorMax = new Vector2(0.5f, 0f);
+        tr.pivot = new Vector2(0f, 0f);
+        tr.anchoredPosition = new Vector2(16f, 20f);
+        tr.sizeDelta = new Vector2(240, 60);
+        titleBtn.onClick.AddListener(() =>
+        {
+            if (pauseGameWhileOpen) Time.timeScale = 1f;
+            SceneManager.LoadScene("Title");
+        });
 
         _panel.SetActive(false);
     }
@@ -241,17 +288,25 @@ public class InGameSettingsOverlay : MonoBehaviour
     void OpenPanel()
     {
         if (_panel == null) return;
+
         _openButton.interactable = false;
         _panel.SetActive(true);
+        _panel.transform.SetAsLastSibling();
+
         if (pauseGameWhileOpen) Time.timeScale = 0f;
+
+        _isOpen = true;
     }
 
     void ClosePanel()
     {
-        if (_panel == null) return;
-        _panel.SetActive(false);
-        if (_openButton != null) _openButton.interactable = true;
-        if (pauseGameWhileOpen) Time.timeScale = 1f;
+        ForceClosePanel();
+    }
+
+    void LateUpdate()
+    {
+        if (_isOpen && _panel != null && _panel.activeSelf)
+            _panel.transform.SetAsLastSibling();
     }
 
     GameObject CreateUIObject(string name, Transform parent)

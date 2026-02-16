@@ -121,6 +121,8 @@ public class GameManager : MonoBehaviour
     bool _isNewRecordThisRun = false;
     bool _isGameOver = false;
 
+    InGameSettingsOverlay _inGameSettingsOverlay;
+
     public bool CanThrow => isGameActive && !isInputBlocked;
 
     // 表示文言はここで統一（バーっぽく短く）
@@ -250,6 +252,12 @@ public class GameManager : MonoBehaviour
         isGameActive = false;
         isInputBlocked = true;
 
+        if (_inGameSettingsOverlay != null)
+        {
+            _inGameSettingsOverlay.ForceClosePanel();
+            _inGameSettingsOverlay.SetGameplayActive(false);
+        }
+
         ResetStreak();
 
         // リスト生成して開始
@@ -278,17 +286,21 @@ public class GameManager : MonoBehaviour
 
         if (uiRoot == null) return;
 
-        InGameSettingsOverlay overlay = GetComponent<InGameSettingsOverlay>();
-        if (overlay == null)
-            overlay = gameObject.AddComponent<InGameSettingsOverlay>();
+        _inGameSettingsOverlay = GetComponent<InGameSettingsOverlay>();
+        if (_inGameSettingsOverlay == null)
+            _inGameSettingsOverlay = gameObject.AddComponent<InGameSettingsOverlay>();
 
-        overlay.Setup(uiRoot);
+        _inGameSettingsOverlay.Setup(uiRoot);
+        _inGameSettingsOverlay.SetGameplayActive(false);
     }
 
     void OnStartSequenceComplete()
     {
         isGameActive = true;
         isInputBlocked = false;
+
+        if (_inGameSettingsOverlay != null)
+            _inGameSettingsOverlay.SetGameplayActive(true);
     }
 
     /// <summary>
@@ -528,6 +540,12 @@ public class GameManager : MonoBehaviour
         _isGameOver = true;
         isGameActive = false;
         isInputBlocked = true;
+
+        if (_inGameSettingsOverlay != null)
+        {
+            _inGameSettingsOverlay.ForceClosePanel();
+            _inGameSettingsOverlay.SetGameplayActive(false);
+        }
 
         ResetStreak();
 
