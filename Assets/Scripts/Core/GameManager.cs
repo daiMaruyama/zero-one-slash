@@ -121,7 +121,10 @@ public class GameManager : MonoBehaviour
     bool _isNewRecordThisRun = false;
     bool _isGameOver = false;
 
+    InGameSettingsOverlay _inGameSettingsOverlay;
+
     public bool CanThrow => isGameActive && !isInputBlocked;
+    public bool IsGameActive => isGameActive;
 
     // 表示文言はここで統一（バーっぽく短く）
     const string TextMiss = "MISS";
@@ -196,6 +199,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     void Start()
     {
+        SetupInGameSettingsOverlay();
+
         if (bgmMain != null)
         {
             if (AudioManager.instance != null) AudioManager.instance.PlayBGM(bgmMain);
@@ -229,6 +234,12 @@ public class GameManager : MonoBehaviour
         isGameActive = false;
         isInputBlocked = true;
 
+        if (_inGameSettingsOverlay != null)
+        {
+            _inGameSettingsOverlay.ForceClosePanel();
+            _inGameSettingsOverlay.SetGameplayActive(false);
+        }
+
         ResetStreak();
 
         // リスト生成して開始
@@ -245,10 +256,34 @@ public class GameManager : MonoBehaviour
         );
     }
 
+    void SetupInGameSettingsOverlay()
+    {
+        Transform uiRoot = null;
+
+        if (timeText != null)
+            uiRoot = timeText.canvas != null ? timeText.canvas.transform : null;
+
+        if (uiRoot == null && targetText != null)
+            uiRoot = targetText.transform.root;
+
+        if (uiRoot == null) return;
+
+        _inGameSettingsOverlay = GetComponent<InGameSettingsOverlay>();
+        if (_inGameSettingsOverlay == null)
+            _inGameSettingsOverlay = gameObject.AddComponent<InGameSettingsOverlay>();
+
+        _inGameSettingsOverlay.Setup(uiRoot);
+        _inGameSettingsOverlay.BindResultPanel(resultPanel);
+        _inGameSettingsOverlay.SetGameplayActive(false);
+    }
+
     void OnStartSequenceComplete()
     {
         isGameActive = true;
         isInputBlocked = false;
+
+        if (_inGameSettingsOverlay != null)
+            _inGameSettingsOverlay.SetGameplayActive(true);
     }
 
     /// <summary>
@@ -489,6 +524,12 @@ public class GameManager : MonoBehaviour
         isGameActive = false;
         isInputBlocked = true;
 
+        if (_inGameSettingsOverlay != null)
+        {
+            _inGameSettingsOverlay.ForceClosePanel();
+            _inGameSettingsOverlay.SetGameplayActive(false);
+        }
+
         ResetStreak();
 
         if (resultPanel != null) resultPanel.SetActive(false);
@@ -678,7 +719,20 @@ public class GameManager : MonoBehaviour
         if (throwIcons != null) for (int i = 0; i < throwIcons.Length; i++) throwIcons[i].SetActive(i < throwsLeft);
     }
 
-    void ShowResultPanel() { if (resultPanel != null) { resultPanel.SetActive(true); AnimateResultScore(); } }
+    void ShowResultPanel()
+    {
+        if (_inGameSettingsOverlay != null)
+        {
+            _inGameSettingsOverlay.ForceClosePanel();
+            _inGameSettingsOverlay.SetGameplayActive(false);
+        }
+
+        if (resultPanel != null)
+        {
+            resultPanel.SetActive(true);
+            AnimateResultScore();
+        }
+    }
 
     /// <summary>
     /// デバッグ用に名前入力パネルを強制表示する。
