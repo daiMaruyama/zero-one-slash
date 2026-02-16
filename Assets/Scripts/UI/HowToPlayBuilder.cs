@@ -109,40 +109,50 @@ public class HowToPlayBuilder : MonoBehaviour
         };
 
         PageDef[] pageDefs =
-        {
+                {
+            // Page 1: 基本ルール (画像: imgRule に image_0.png を設定)
             new PageDef
             {
-                header = "SCORING BONUS",
-                body = "<b>【ボーナス】</b>\n"
-                     + "MASTER OUT  <color=#FF3223>+500</color>\n"
-                     + "SINGLE OUT  <color=#00E5FF>+100</color>\n\n"
-                     + "※最後の1投がどの条件でOUTしたかで\n"
-                     + "ボーナス点が決まる。"
+                header = "BASIC RULE",
+                body = "\n<b>【ターゲットを狙え】</b>\n"
+                     + "持ち点(TARGET)を、3投以内に\n"
+                     + "ピッタリ<color=#00E5FF>０</color>にすればクリア！\n\n"
+                     + "0を下回ると<color=#FF6666>BUST</color>となり失敗。\n"
+                     + "残機(THROWLEFT)に注意せよ。"
             },
+            // Page 2: エリアとボーナス (画像: imgScoring に image_1.png を設定)
             new PageDef
             {
-                header = "BOARD AREA",
-                body = "<b>【エリア（減点用）】</b>\n"
+                header = "AREAS & OUT BONUS",
+                body = "\n<b>【エリア得点】</b>\n"
                      + "DOUBLE <color=#00F4A4>×2</color> / TRIPLE <color=#F7FF4C>×3</color>\n"
-                     + "IN-BULL <color=#FF3223>50</color> / OUTER <color=#F7FF4C>25</color>\n\n"
-                     + "この値はターゲットを0にするための手段。\n"
-                     + "ボーナス(500/100)とは別ルール。"
+                     + "Bull (Outer<color=#F7FF4C>25</color>/In<color=#FF3223>50</color>) で削れ。\n\n"
+                     + "<b>【フィニッシュボーナス】</b>\n"
+                     + "最後の1投がD/T/Bullなら\n<color=#FF3223>MASTER OUT (+500点)</color>！\n"
+                     + "シングルならSINGLE OUT (+100点)。"
             },
+            // Page 3: コンボと時間延長 (画像: imgStreak に image_2.png を設定)
             new PageDef
             {
-                header = "STREAK",
-                body = "ヒットでコンボが蓄積！\n\n"
-                     + "GREAT (D / T / Bull)  <color=#FF3223>+2</color>\n"
-                     + "SINGLE  <color=#00E5FF>+1</color>\n\n"
-                     + "コンボが溜まると\n<b>制限時間が延長</b>！"
+                header = "COMBO & TIME",
+                body = "\n<b>【コンボで時間を稼げ】</b>\n"
+                     + "ヒットでCOMBO(コンボ)が蓄積。\n"
+                     + "GREATヒット(D/T/Bull)は<color=#FF3223>+2</color>！\n\n"
+                     + "コンボが続くと、ボーナスとして\n"
+                     + "<b>制限時間が延長</b>されていく！\n"
+                     + "ハイスコアへの鍵となる。"
             },
+            // Page 4: ミスとペナルティ (画像: imgFail に image_3.png を設定)
             new PageDef
             {
-                header = "MISS",
-                body = "<color=#FF6666>BUST</color>       スコアオーバー\n\n"
-                     + "<color=#FF6666>MISS</color>        エリア外タップ\n\n"
-                     + "<color=#FF6666>NO OUT</color>    3投で届かない\n\n"
-                     + "→ コンボリセット"
+                header = "MISS & PENALTY",
+                body = "\n<b>【失敗条件】</b>\n"
+                     + "<color=#FF6666>BUST</color> (スコアオーバー)\n"
+                     + "<color=#FF6666>MISS</color> (エリア外)\n"
+                     + "<color=#FF6666>NO OUT</color> (3投で届かず)\n\n"
+                     + "失敗すると<b>コンボがリセット</b>され、"
+                     + "時間回復のチャンスを失う。\n"
+                     + "正確なスローが命！"
             },
         };
 
