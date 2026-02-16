@@ -22,11 +22,13 @@ public class HowToPlayBuilder : MonoBehaviour
 
     [Header("色")]
     [SerializeField] Color neonRed = new Color(1f, 0.196f, 0.137f);
+    [SerializeField] Color textPanelColor = new Color(0.02f, 0.04f, 0.08f, 0.76f);
+    [SerializeField] Color textShadowColor = new Color(0f, 0f, 0f, 0.8f);
 
     [Header("フォントサイズ")]
     [SerializeField] int titleFontSize = 36;
     [SerializeField] int headerFontSize = 22;
-    [SerializeField] int bodyFontSize = 26;
+    [SerializeField] int bodyFontSize = 24;
     [SerializeField] int navFontSize = 16;
 
     [Header("レイアウト")]
@@ -77,6 +79,7 @@ public class HowToPlayBuilder : MonoBehaviour
         titleRT.anchoredPosition = Vector2.zero;
         titleRT.sizeDelta = new Vector2(0, 44);
         titleText.alignment = TextAnchor.MiddleCenter;
+        AddTextShadow(titleText, textShadowColor, new Vector2(2f, -2f));
 
         // 赤ライン
         CreateRedLine(contentGO.transform, -48f);
@@ -97,36 +100,49 @@ public class HowToPlayBuilder : MonoBehaviour
         viewportGO.AddComponent<RectMask2D>();
 
         // ===== ページ定義 =====
-        Sprite[] sprites = { imgRule, imgScoring, imgStreak, imgFail };
+        Sprite[] sprites =
+        {
+            imgScoring,
+            imgRule,
+            imgStreak,
+            imgFail
+        };
 
         PageDef[] pageDefs =
         {
             new PageDef
             {
-                header = "RULE",
-                body = "ボードをタップして\nターゲットスコアを\n<b>3投以内</b>にゼロにしよう！"
+                header = "SCORING BONUS",
+                body = "<b>【ボーナス】</b>\n"
+                     + "MASTER OUT  <color=#FF3223>+500</color>\n"
+                     + "SINGLE OUT  <color=#00E5FF>+100</color>\n\n"
+                     + "※最後の1投がどの条件でOUTしたかで\n"
+                     + "ボーナス点が決まる。"
             },
             new PageDef
             {
-                header = "SCORING",
-                body = "<b>MASTER OUT</b>\n  D / T / Bull で上がり\n  → <color=#FF3223>500 pts</color>\n\n" +
-                       "<b>SINGLE OUT</b>\n  シングルのみで上がり\n  → <color=#00E5FF>100 pts</color>"
+                header = "BOARD AREA",
+                body = "<b>【エリア（減点用）】</b>\n"
+                     + "DOUBLE <color=#00F4A4>×2</color> / TRIPLE <color=#F7FF4C>×3</color>\n"
+                     + "IN-BULL <color=#FF3223>50</color> / OUTER <color=#F7FF4C>25</color>\n\n"
+                     + "この値はターゲットを0にするための手段。\n"
+                     + "ボーナス(500/100)とは別ルール。"
             },
             new PageDef
             {
                 header = "STREAK",
-                body = "ヒットでコンボが蓄積！\n\n" +
-                       "GREAT (D / T / Bull)  <color=#FF3223>+2</color>\n" +
-                       "SINGLE  <color=#00E5FF>+1</color>\n\n" +
-                       "コンボが溜まると\n<b>制限時間が延長</b>！"
+                body = "ヒットでコンボが蓄積！\n\n"
+                     + "GREAT (D / T / Bull)  <color=#FF3223>+2</color>\n"
+                     + "SINGLE  <color=#00E5FF>+1</color>\n\n"
+                     + "コンボが溜まると\n<b>制限時間が延長</b>！"
             },
             new PageDef
             {
                 header = "MISS",
-                body = "<color=#FF6666>BUST</color>       スコアオーバー\n\n" +
-                       "<color=#FF6666>MISS</color>        エリア外タップ\n\n" +
-                       "<color=#FF6666>NO OUT</color>    3投で届かない\n\n" +
-                       "→ コンボリセット"
+                body = "<color=#FF6666>BUST</color>       スコアオーバー\n\n"
+                     + "<color=#FF6666>MISS</color>        エリア外タップ\n\n"
+                     + "<color=#FF6666>NO OUT</color>    3投で届かない\n\n"
+                     + "→ コンボリセット"
             },
         };
 
@@ -144,7 +160,7 @@ public class HowToPlayBuilder : MonoBehaviour
         RectTransform[] pageRTs = new RectTransform[pageCount];
         for (int i = 0; i < pageCount; i++)
         {
-            pageRTs[i] = BuildPage(pagesGO.transform, pageDefs[i], sprites[i], font, i, pageWidth);
+            pageRTs[i] = BuildPage(pagesGO.transform, pageDefs[i], i < sprites.Length ? sprites[i] : null, font, i, pageWidth);
         }
 
         // ===== ナビゲーション =====
@@ -225,6 +241,7 @@ public class HowToPlayBuilder : MonoBehaviour
         {
             imgComp.sprite = screenshot;
             imgComp.preserveAspect = true;
+            imgComp.color = new Color(0.86f, 0.86f, 0.86f, 0.96f);
         }
         else
         {
@@ -238,6 +255,20 @@ public class HowToPlayBuilder : MonoBehaviour
         outline.effectDistance = new Vector2(1, -1);
 
         // --- 左側: テキストエリア（幅54%） ---
+        GameObject textPanelGO = CreateUIObject("TextPanel", pageGO.transform);
+        RectTransform textPanelRT = textPanelGO.GetComponent<RectTransform>();
+        textPanelRT.anchorMin = new Vector2(0, 0);
+        textPanelRT.anchorMax = new Vector2(1f - imageRatio - 0.02f, 1);
+        textPanelRT.offsetMin = new Vector2(0, 8);
+        textPanelRT.offsetMax = new Vector2(-8, -8);
+
+        Image textPanelBg = textPanelGO.AddComponent<Image>();
+        textPanelBg.color = textPanelColor;
+        textPanelBg.raycastTarget = false;
+
+        Outline textPanelOutline = textPanelGO.AddComponent<Outline>();
+        textPanelOutline.effectColor = new Color(neonRed.r, neonRed.g, neonRed.b, 0.18f);
+        textPanelOutline.effectDistance = new Vector2(1f, -1f);
 
         // セクションヘッダー
         GameObject headerGO = CreateUIObject("HeaderBar", pageGO.transform);
@@ -248,22 +279,6 @@ public class HowToPlayBuilder : MonoBehaviour
         headerRT.anchoredPosition = new Vector2(0, -20);
         headerRT.sizeDelta = new Vector2(0, 30);
 
-        Image headerBg = headerGO.AddComponent<Image>();
-        headerBg.color = new Color(neonRed.r, neonRed.g, neonRed.b, 0.12f);
-        headerBg.raycastTarget = false;
-
-        // 左アクセント
-        GameObject accentGO = CreateUIObject("Accent", headerGO.transform);
-        RectTransform accentRT = accentGO.GetComponent<RectTransform>();
-        accentRT.anchorMin = new Vector2(0, 0);
-        accentRT.anchorMax = new Vector2(0, 1);
-        accentRT.pivot = new Vector2(0, 0.5f);
-        accentRT.anchoredPosition = Vector2.zero;
-        accentRT.sizeDelta = new Vector2(3, 0);
-        Image accentImg = accentGO.AddComponent<Image>();
-        accentImg.color = neonRed;
-        accentImg.raycastTarget = false;
-
         // ヘッダーテキスト
         Text headerLabel = CreateText("HeaderLabel", headerGO.transform, "  " + def.header,
             font, headerFontSize, FontStyle.BoldAndItalic, neonRed);
@@ -273,6 +288,7 @@ public class HowToPlayBuilder : MonoBehaviour
         headerLabelRT.offsetMin = new Vector2(10, 0);
         headerLabelRT.offsetMax = Vector2.zero;
         headerLabel.alignment = TextAnchor.MiddleLeft;
+        AddTextShadow(headerLabel, textShadowColor, new Vector2(1.5f, -1.5f));
 
         // 説明テキスト
         Text bodyText = CreateText("Body", pageGO.transform, def.body,
@@ -288,8 +304,16 @@ public class HowToPlayBuilder : MonoBehaviour
         bodyText.verticalOverflow = VerticalWrapMode.Overflow;
         bodyText.lineSpacing = bodyLineSpacing;
         bodyText.supportRichText = true;
+        AddTextShadow(bodyText, textShadowColor, new Vector2(2f, -2f));
 
         return pageRT;
+    }
+
+    void AddTextShadow(Text text, Color color, Vector2 distance)
+    {
+        Shadow shadow = text.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = color;
+        shadow.effectDistance = distance;
     }
 
     // ===== NeonMenuButton風ナビボタン =====
