@@ -8244,7 +8244,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 5}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -354, y: 211.33}
+  m_AnchoredPosition: {x: -352, y: 230}
   m_SizeDelta: {x: 1000, y: 166.83}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &843418731
@@ -8283,7 +8283,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 5e42b4c0ef2aa0b45b4928d691990f73, type: 3}
     m_FontSize: 145
     m_FontStyle: 3
     m_BestFit: 0
@@ -8927,7 +8927,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 2}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 5, y: -53}
+  m_AnchoredPosition: {x: -10, y: -54}
   m_SizeDelta: {x: 1000, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &991853777
@@ -8966,7 +8966,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: ca71d94c2a06452438e532eaa8f09d06, type: 3}
+    m_Font: {fileID: 12800000, guid: 5e42b4c0ef2aa0b45b4928d691990f73, type: 3}
     m_FontSize: 150
     m_FontStyle: 3
     m_BestFit: 0
@@ -10787,6 +10787,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 366b97bbf65af214a909e2b36486097c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pauseGameWhileSettingsOpen: 0
 --- !u!1 &1425858694
 GameObject:
   m_ObjectHideFlags: 0
@@ -11787,7 +11788,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 2}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 5, y: -44}
+  m_AnchoredPosition: {x: -9, y: -44}
   m_SizeDelta: {x: 1000, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1565090463
@@ -11826,7 +11827,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: ca71d94c2a06452438e532eaa8f09d06, type: 3}
+    m_Font: {fileID: 12800000, guid: 5e42b4c0ef2aa0b45b4928d691990f73, type: 3}
     m_FontSize: 150
     m_FontStyle: 3
     m_BestFit: 0
