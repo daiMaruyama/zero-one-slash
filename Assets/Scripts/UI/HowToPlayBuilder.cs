@@ -113,23 +113,23 @@ public class HowToPlayBuilder : MonoBehaviour
             new PageDef
             {
                 header = "RULE",
-                body = "表示されたお題スコアを\n<b>3投以内</b>でちょうど0にして\nクリアしよう！\n\n"
+                body = "\n表示されたお題スコアを\n<b>3投以内</b>でちょうど0にして\nクリアしよう！\n\n"
                      + "ボードをタップして\n狙ったエリアに当てよう。"
             },
             new PageDef
             {
                 header = "SCORING",
                 body = "\n<b>【ボーナス】</b>\n"
-                     + "MASTER OUT <color=#FF3223>+500</color> / SINGLE <color=#00E5FF>+100</color>\n\n"
+                     + "MASTER OUT <color=#FF3223>+500</color>\nSINGLE <color=#00E5FF>+100</color>\n\n"
                      + "<b>【エリア】</b>\n"
                      + "DOUBLE <color=#00F4A4>×2</color> / TRIPLE <color=#F7FF4C>×3</color>\n"
                      + "IN-BULL <color=#FF3223>50</color> / OUTER <color=#F7FF4C>25</color>\n\n"
-                     + "※上がり点そのものは自由。OUT時の条件でボーナスが決まる"
+                     + "※上がり点そのものは自由。\nOUT時の条件でボーナスが決まる"
             },
             new PageDef
             {
-                header = "STREAK",
-                body = "ヒットでコンボが蓄積！\n\n"
+                header = "COMBO",
+                body = "\nヒットでコンボが蓄積！\n\n"
                      + "GREAT (D / T / Bull)  <color=#FF3223>+2</color>\n"
                      + "SINGLE  <color=#00E5FF>+1</color>\n\n"
                      + "コンボが溜まると\n<b>制限時間が延長</b>！"
@@ -137,7 +137,7 @@ public class HowToPlayBuilder : MonoBehaviour
             new PageDef
             {
                 header = "MISS",
-                body = "<color=#FF6666>BUST</color>       スコアオーバー\n\n"
+                body = "\n<color=#FF6666>BUST</color>       スコアオーバー\n\n"
                      + "<color=#FF6666>MISS</color>        エリア外タップ\n\n"
                      + "<color=#FF6666>NO OUT</color>    3投で届かない\n\n"
                      + "→ コンボリセット"
