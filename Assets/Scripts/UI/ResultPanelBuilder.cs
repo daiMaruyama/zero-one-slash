@@ -15,45 +15,56 @@ public class ResultPanelBuilder : MonoBehaviour
 
     GameObject _settingsPanel;
     Button _settingsButton;
+    public static ResultPanelBuilder instance;
 
     void Awake()
     {
+        instance = this;
+
         foreach (var btn in GetComponentsInChildren<Button>(true))
             StyleButton(btn);
 
-        EnsureInGameSettingsUI();
+        // EnsureInGameSettingsUI();
     }
 
-    void EnsureInGameSettingsUI()
+    public void SetSettingsButtonActive(bool isActive)
     {
-        Button retryButton = FindButtonByName("RetryButton");
-        if (retryButton == null) return;
-
-        // ===== SETTINGSボタンを追加 =====
-        GameObject settingsBtnGO = Instantiate(retryButton.gameObject, retryButton.transform.parent);
-        settingsBtnGO.name = "SettingsButton";
-
-        RectTransform settingsRT = settingsBtnGO.transform as RectTransform;
-        RectTransform retryRT = retryButton.transform as RectTransform;
-        if (settingsRT != null && retryRT != null)
-            settingsRT.anchoredPosition = new Vector2(0f, retryRT.anchoredPosition.y);
-
-        Text label = settingsBtnGO.GetComponentInChildren<Text>(true);
-        if (label != null) label.text = "SETTING";
-
-        _settingsButton = settingsBtnGO.GetComponent<Button>();
         if (_settingsButton != null)
         {
-            _settingsButton.onClick = new Button.ButtonClickedEvent();
-            _settingsButton.onClick.AddListener(OpenSettingsPanel);
-            StyleButton(_settingsButton);
+            _settingsButton.gameObject.SetActive(isActive);
         }
-
-        // ===== SETTINGSパネル本体 =====
-        _settingsPanel = BuildSettingsPanel();
-        if (_settingsPanel != null)
-            _settingsPanel.SetActive(false);
     }
+
+    //void EnsureInGameSettingsUI()
+    //{
+    //    Button retryButton = FindButtonByName("RetryButton");
+    //    if (retryButton == null) return;
+
+    //    // ===== SETTINGSボタンを追加 =====
+    //    GameObject settingsBtnGO = Instantiate(retryButton.gameObject, retryButton.transform.parent);
+    //    settingsBtnGO.name = "SettingsButton";
+
+    //    RectTransform settingsRT = settingsBtnGO.transform as RectTransform;
+    //    RectTransform retryRT = retryButton.transform as RectTransform;
+    //    if (settingsRT != null && retryRT != null)
+    //        settingsRT.anchoredPosition = new Vector2(0f, retryRT.anchoredPosition.y);
+
+    //    Text label = settingsBtnGO.GetComponentInChildren<Text>(true);
+    //    if (label != null) label.text = "SETTING";
+
+    //    _settingsButton = settingsBtnGO.GetComponent<Button>();
+    //    if (_settingsButton != null)
+    //    {
+    //        _settingsButton.onClick = new Button.ButtonClickedEvent();
+    //        _settingsButton.onClick.AddListener(OpenSettingsPanel);
+    //        StyleButton(_settingsButton);
+    //    }
+
+    //    // ===== SETTINGSパネル本体 =====
+    //    _settingsPanel = BuildSettingsPanel();
+    //    if (_settingsPanel != null)
+    //        _settingsPanel.SetActive(false);
+    //}
 
     GameObject BuildSettingsPanel()
     {

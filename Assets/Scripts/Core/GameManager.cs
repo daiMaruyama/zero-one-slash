@@ -538,6 +538,11 @@ public class GameManager : MonoBehaviour
     {
         StartBgmPitchReturnSmooth();
 
+        if (ResultPanelBuilder.instance != null)
+        {
+            ResultPanelBuilder.instance.SetSettingsButtonActive(false);
+        }
+
         if (_isGameOver) return;
         _isGameOver = true;
         isGameActive = false;

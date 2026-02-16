@@ -7979,17 +7979,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   menuFont: {fileID: 12800000, guid: ca71d94c2a06452438e532eaa8f09d06, type: 3}
   howToPlayPanel: {fileID: 782819119}
-  imgRule: {fileID: 0}
-  imgScoring: {fileID: 0}
+  imgRule: {fileID: 21300000, guid: 28fe355104f17f84a9690aab17868f5b, type: 3}
+  imgScoring: {fileID: 21300000, guid: ef901ad25f6d4214e9a36e885717f55f, type: 3}
   imgStreak: {fileID: 0}
-  imgFail: {fileID: 0}
+  imgFail: {fileID: 21300000, guid: 742bba0c73bd7bf4e89293bc90a8dc31, type: 3}
   neonRed: {r: 1, g: 0.196, b: 0.137, a: 1}
+  textPanelColor: {r: 0.02, g: 0.04, b: 0.08, a: 0.76}
+  textShadowColor: {r: 0, g: 0, b: 0, a: 0.8}
   titleFontSize: 36
-  headerFontSize: 35
+  headerFontSize: 45
   bodyFontSize: 35
   navFontSize: 20
-  imageRatio: 0.58
-  bodyLineSpacing: 1.4
+  imageRatio: 0.64
+  bodyLineSpacing: 1
 --- !u!1 &1329498756
 GameObject:
   m_ObjectHideFlags: 0

@@ -261,6 +261,8 @@ public class DartsBoard : MonoBehaviour
 
     void SpawnHighlight(HitResult res)
     {
+        if (!gameObject.activeInHierarchy) return;
+
         float targetIntensity = res.isInnerBull ? heavyDimmerIntensity : dimmerIntensity;
 
         if (targetIntensity > 0)

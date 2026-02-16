@@ -354,30 +354,29 @@ public class InGameSettingsOverlay : MonoBehaviour
 
     void LateUpdate()
     {
-        if (_gameManager != null && !_gameManager.IsGameActive)
+        // ゲームがアクティブでない、またはリザルトパネルが表示されている場合
+        bool shouldHide = (_gameManager != null && !_gameManager.IsGameActive) ||
+                          (_resultPanel != null && _resultPanel.activeInHierarchy);
+
+        if (shouldHide)
         {
+            // 設定パネルが開いていたら強制的に閉じる
             if (_panel != null && _panel.activeSelf)
                 ForceClosePanel();
 
-            if (_openButton != null)
+            // ボタンを確実に「消す」
+            if (_openButton != null && _openButton.gameObject.activeSelf)
+            {
                 _openButton.gameObject.SetActive(false);
-
+            }
             return;
         }
 
-        if (_resultPanel != null && _resultPanel.activeInHierarchy)
-        {
-            if (_panel != null && _panel.activeSelf)
-                ForceClosePanel();
-
-            if (_openButton != null)
-                _openButton.gameObject.SetActive(false);
-
-            return;
-        }
-
+        // プレイ中、パネルが開いていたら最前面に持ってくる
         if (_isOpen && _panel != null && _panel.activeSelf)
+        {
             _panel.transform.SetAsLastSibling();
+        }
     }
 
     GameObject CreateUIObject(string name, Transform parent)
