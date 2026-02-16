@@ -1854,7 +1854,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 4eae44bf9fbbf5847a4e98d880efc51d, type: 3}
+    m_Font: {fileID: 12800000, guid: 701222a7c132d06479c025baa9802f20, type: 3}
     m_FontSize: 34
     m_FontStyle: 1
     m_BestFit: 0
@@ -10903,7 +10903,7 @@ MonoBehaviour:
   missRadius: 3.4
   cardPrefab: {fileID: 5692719674400806139, guid: f9626b60d09e4f54caf00ba5b633e972, type: 3}
   highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  innerBullHighlightColor: {r: 1, g: 0, b: 0.2, a: 1}
+  innerBullHighlightColor: {r: 0, g: 0, b: 0, a: 1}
   outerBullHighlightColor: {r: 1, g: 0.3, b: 0, a: 1}
   highlightArcWidth: 17
   dimmerIntensity: 0.64
@@ -11201,15 +11201,15 @@ MonoBehaviour:
   effectBull: {fileID: 362261158077530393, guid: 20fda529c996a334da7fd65b48ea40df, type: 3}
   effectMiss: {fileID: 5238538877814813142, guid: 47096eff328e11a418ace7db2d72aa97, type: 3}
   popupTextPrefab: {fileID: 0}
-  seSingle: {fileID: 8300000, guid: 1036a6d3a35ca6945bc59d8e3e3120c8, type: 3}
-  seDouble: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
-  seTriple: {fileID: 8300000, guid: 60d16a4c2ac219540b9f7597a717e227, type: 3}
+  seSingle: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
+  seDouble: {fileID: 8300000, guid: 1924e6b6ac615764e99dd7506aab10b6, type: 3}
+  seTriple: {fileID: 8300000, guid: 1924e6b6ac615764e99dd7506aab10b6, type: 3}
   seOuterBull: {fileID: 8300000, guid: 88f42ee35d152064ea0a3c4e9c0a18e7, type: 3}
-  seInnerBull: {fileID: 8300000, guid: 88f42ee35d152064ea0a3c4e9c0a18e7, type: 3}
+  seInnerBull: {fileID: 8300000, guid: 62051ed5972c53c4d9254768159a1aeb, type: 3}
   seWin: {fileID: 8300000, guid: 08185bedf36cefd4eb18c298c31b9ae8, type: 3}
   seFail: {fileID: 8300000, guid: b3df74b2481b32d428cee864adbbbab8, type: 3}
   seMiss: {fileID: 8300000, guid: 9edab7a966a13d540bc07fe9cc4794ae, type: 3}
-  seResult: {fileID: 0}
+  seResult: {fileID: 8300000, guid: f60cf81ed22e100469675ecca00a2141, type: 3}
   bgmMain: {fileID: 0}
   seNoOut: {fileID: 8300000, guid: 59d8fdf2e1d8c384280b81f28fc97a65, type: 3}
   baseBgmVolume: 0.5

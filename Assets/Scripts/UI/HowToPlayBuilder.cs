@@ -147,12 +147,11 @@ public class HowToPlayBuilder : MonoBehaviour
             {
                 header = "MISS & PENALTY",
                 body = "\n<b>【失敗条件】</b>\n"
-                     + "<color=#FF6666>BUST</color> (スコアオーバー)\n"
-                     + "<color=#FF6666>MISS</color> (エリア外)\n"
-                     + "<color=#FF6666>NO OUT</color> (3投で届かず)\n\n"
-                     + "失敗すると<b>コンボがリセット</b>され、"
-                     + "時間回復のチャンスを失う。\n"
-                     + "正確なスローが命！"
+                     + "<color=#FF6666>BUST</color> (オーバー) / <color=#FF6666>MISS</color> (枠外)\n\n"
+                     + "<b>【詰み (NO OUT) に注意！】</b>\n"
+                     + "右図は「残り1投でTARGET 41」の状態。\n"
+                     + "<b>どこに当ててもクリア不可能</b>となる。\n\n"
+                     + "「MASTEROUTで上がれる数字」を残す戦略が重要。"
             },
         };
 
