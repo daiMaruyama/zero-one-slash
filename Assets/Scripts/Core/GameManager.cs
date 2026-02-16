@@ -165,32 +165,51 @@ public class GameManager : MonoBehaviour
 
     void ApplyStreakTimeHeal(string areaCode)
     {
-        if (!useStreak) return;
-        if (!isGameActive) return;
+        if (!useStreak || !isGameActive) return;
 
         bool isGreat = IsGreatArea(areaCode);
-
-        // streak加算（表示も更新）
         SetStreak(_streak + (isGreat ? 2 : 1));
 
-        // 毎回ちょい回復（Popupも出す）
-        AddTimeWithPopup(isGreat ? timeHealGreat : timeHealWin);
+        // --- 調整1: 基礎回復の階段を緩くする ---
+        // 3コンボ（1問正解程度）から回復開始。10コンボで100%回復。
+        float baseHealMultiplier = _streak < 3 ? 0f : (_streak < 10 ? 0.5f : 1f);
+        AddTimeWithPopup((isGreat ? timeHealGreat : timeHealWin) * baseHealMultiplier);
 
-        // GREATだけbankでドン回復
         if (!isGreat) return;
 
+        // 2. GREAT BANK（3回ヒットでドン回復）
         _greatBank++;
         if (_greatBank < Mathf.Max(1, greatBankGoal)) return;
 
         _greatBank = 0;
 
+        // --- 調整2: ボーナス発生の閾値を下げ、最大値に絶対的なブレーキをかける ---
         float bonus = bankBonusBase;
-        if (_streak >= 20)
-            bonus = bankBonusStreak20;
-        else if (_streak >= 10)
+
+        if (_streak >= 12) // 20 → 12 に引き下げ（ここが実質の無双ゾーン）
+        {
+            // 12コンボ以降も少しずつ伸びるが、2.5秒で絶対に止める
+            float extra = (_streak - 12) * 0.05f;
+            // 【重要】3.0s → 2.5s に下げることで、演出時間による消費が上回り、いつか必ず終わるようになります
+            bonus = Mathf.Min(bankBonusStreak20 + extra, 2.5f);
+        }
+        else if (_streak >= 6) // 10 → 6 に引き下げ（3問ノーミスくらいで到達）
+        {
             bonus = bankBonusStreak10;
+        }
+        else
+        {
+            // 序盤でも、GREATを3回出せば 0.5秒 くらいはご褒美をあげて退屈を防ぐ
+            bonus = 0.5f;
+        }
 
         AddTimeWithPopup(bonus);
+
+        // 演出のトリガーも12コンボからにして、早めに気分を盛り上げる
+        if (_streak >= 12 && BloomManager.instance != null)
+        {
+            BloomManager.instance.FlashBloom(1000);
+        }
     }
 
     /// <summary>
@@ -833,6 +852,7 @@ public class GameManager : MonoBehaviour
     }
     void SetStreak(int value)
     {
+        int prevStreak = _streak;
         _streak = Mathf.Max(0, value);
 
         if (streakText == null) return;
@@ -845,6 +865,30 @@ public class GameManager : MonoBehaviour
 
         streakText.gameObject.SetActive(true);
         streakText.text = $"COMBO: {_streak}";
+
+        // 1. コンボが増えた時だけ「弾む」アニメーション
+        if (_streak > prevStreak)
+        {
+            // 一旦リセットしてから、1.2倍に膨らんで戻る
+            streakText.transform.DOKill();
+            streakText.transform.localScale = Vector3.one;
+            streakText.transform.DOPunchScale(Vector3.one * 0.3f, 0.2f, 5, 0.5f);
+
+            // 2. コンボ数に応じて色を変える（熱量を出す）
+            Color streakColor = Color.white;
+            if (_streak >= 30) streakColor = new Color(1f, 0f, 1f); // 30〜：ピンク/マゼンタ（神）
+            else if (_streak >= 20) streakColor = Color.red;       // 20〜：赤（激熱）
+            else if (_streak >= 10) streakColor = Color.yellow;    // 10〜：黄（ノリノリ）
+            else if (_streak >= 5) streakColor = Color.cyan;      // 5〜：水色（コンボ開始）
+
+            streakText.color = streakColor;
+
+            // 3. 高コンボ時は画面を少し揺らす（GMから直接呼ぶ）
+            if (_streak >= 10 && CameraShake.instance != null)
+            {
+                CameraShake.instance.Shake(0.1f, 0.05f * (_streak / 10f));
+            }
+        }
     }
 
     // 秒を足して、PopUpも出す（バランスは後で調整すればOK）

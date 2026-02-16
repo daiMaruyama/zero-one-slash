@@ -8244,7 +8244,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 5}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -365.8, y: 211.33}
+  m_AnchoredPosition: {x: -354, y: 211.33}
   m_SizeDelta: {x: 1000, y: 166.83}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &843418731
@@ -8284,7 +8284,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 150
+    m_FontSize: 145
     m_FontStyle: 3
     m_BestFit: 0
     m_MinSize: 0
@@ -9405,9 +9405,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 'Streak
-
-'
+  m_Text: COMBO
 --- !u!222 &1113154735
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -10913,7 +10911,7 @@ MonoBehaviour:
   guideThreshold: 61
   guideColorSingle: {r: 1, g: 0.9778552, b: 0, a: 1}
   guideColorPower: {r: 1, g: 0.93436277, b: 0, a: 1}
-  guideColorBull: {r: 1, g: 1, b: 1, a: 1}
+  guideColorBull: {r: 0.41320753, g: 0.79868156, b: 1, a: 1}
   guideAlphaSingle: 0.4
   guideAlphaPower: 0.6
   guideAlphaBull: 0.5
@@ -10926,7 +10924,7 @@ MonoBehaviour:
   guidePulseMinMul: 0.55
   guidePulseMaxMul: 1.15
   guidePulsePhaseJitter: 0.35
-  guideAppearanceDelay: 5
+  guideAppearanceDelay: 3
   popManager: {fileID: 685186469}
 --- !u!1 &1428702714
 GameObject:
@@ -11171,7 +11169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87d7a37d0680d8e4f8a893a0b92a31c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  timeLimit: 3
+  timeLimit: 45
   throwCooldown: 0.3
   nextQuestionDelay: 1.5
   winningZoomSize: 4.85
@@ -11226,12 +11224,12 @@ MonoBehaviour:
   - {fileID: 64964647}
   disableWhileNameInput: []
   useStreak: 1
-  timeHealWin: 1
-  timeHealGreat: 2
+  timeHealWin: 0.3
+  timeHealGreat: 0.5
   greatBankGoal: 3
-  bankBonusBase: 1
-  bankBonusStreak10: 5
-  bankBonusStreak20: 10
+  bankBonusBase: 0.5
+  bankBonusStreak10: 1.5
+  bankBonusStreak20: 2
   streakText: {fileID: 1113154734}
   timePopupPrefab: {fileID: 2215983650678574815, guid: 0093c86ec7e15144388b30de1fd82b66, type: 3}
   timePopupAnchor: {fileID: 1278861084}
