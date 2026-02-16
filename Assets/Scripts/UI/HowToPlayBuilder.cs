@@ -236,6 +236,7 @@ public class HowToPlayBuilder : MonoBehaviour
         {
             imgComp.sprite = screenshot;
             imgComp.preserveAspect = true;
+            imgComp.color = new Color(0.86f, 0.86f, 0.86f, 0.96f);
         }
         else
         {
@@ -272,22 +273,6 @@ public class HowToPlayBuilder : MonoBehaviour
         headerRT.pivot = new Vector2(0, 1);
         headerRT.anchoredPosition = new Vector2(0, -20);
         headerRT.sizeDelta = new Vector2(0, 30);
-
-        Image headerBg = headerGO.AddComponent<Image>();
-        headerBg.color = new Color(neonRed.r, neonRed.g, neonRed.b, 0.12f);
-        headerBg.raycastTarget = false;
-
-        // 左アクセント
-        GameObject accentGO = CreateUIObject("Accent", headerGO.transform);
-        RectTransform accentRT = accentGO.GetComponent<RectTransform>();
-        accentRT.anchorMin = new Vector2(0, 0);
-        accentRT.anchorMax = new Vector2(0, 1);
-        accentRT.pivot = new Vector2(0, 0.5f);
-        accentRT.anchoredPosition = Vector2.zero;
-        accentRT.sizeDelta = new Vector2(3, 0);
-        Image accentImg = accentGO.AddComponent<Image>();
-        accentImg.color = neonRed;
-        accentImg.raycastTarget = false;
 
         // ヘッダーテキスト
         Text headerLabel = CreateText("HeaderLabel", headerGO.transform, "  " + def.header,
