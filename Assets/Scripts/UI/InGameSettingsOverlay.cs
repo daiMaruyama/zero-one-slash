@@ -18,6 +18,7 @@ public class InGameSettingsOverlay : MonoBehaviour
     bool _isOpen;
     bool _isGameplayActive;
     GameObject _resultPanel;
+    GameManager _gameManager;
 
     public void Setup(Transform uiRoot)
     {
@@ -25,6 +26,7 @@ public class InGameSettingsOverlay : MonoBehaviour
         if (_openButton != null) return;
 
         _uiRoot = uiRoot;
+        _gameManager = GetComponent<GameManager>();
         BuildOpenButton();
         BuildPanel();
 
@@ -352,6 +354,17 @@ public class InGameSettingsOverlay : MonoBehaviour
 
     void LateUpdate()
     {
+        if (_gameManager != null && !_gameManager.IsGameActive)
+        {
+            if (_panel != null && _panel.activeSelf)
+                ForceClosePanel();
+
+            if (_openButton != null)
+                _openButton.gameObject.SetActive(false);
+
+            return;
+        }
+
         if (_resultPanel != null && _resultPanel.activeInHierarchy)
         {
             if (_panel != null && _panel.activeSelf)

@@ -124,6 +124,7 @@ public class GameManager : MonoBehaviour
     InGameSettingsOverlay _inGameSettingsOverlay;
 
     public bool CanThrow => isGameActive && !isInputBlocked;
+    public bool IsGameActive => isGameActive;
 
     // 表示文言はここで統一（バーっぽく短く）
     const string TextMiss = "MISS";
