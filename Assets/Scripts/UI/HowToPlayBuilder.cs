@@ -112,38 +112,36 @@ public class HowToPlayBuilder : MonoBehaviour
         {
             new PageDef
             {
-                header = "SCORING BONUS",
-                body = "<b>まずはここだけ覚えよう</b>\n\n"
-                     + "MASTER OUT  <color=#FF3223>+500</color>\n"
-                     + "SINGLE OUT  <color=#00E5FF>+100</color>\n\n"
-                     + "※最終投がどの条件でOUTしたかで\n"
-                     + "ボーナス点が決まる。"
+                header = "RULE",
+                body = "\nターゲットを<b>3投以内</b>にゼロにしよう！\n\n"
+                     + "D / T / Bull を活用して\n効率よく削るのがクリアのコツ。"
             },
             new PageDef
             {
-                header = "BOARD AREA",
-                body = "<b>このページは“減点の手段”説明</b>\n\n"
-                     + "DOUBLE <color=#00F4A4>×2</color> / TRIPLE <color=#F7FF4C>×3</color>\n"
-                     + "IN-BULL <color=#FF3223>50</color> / OUTER <color=#F7FF4C>25</color>\n\n"
-                     + "エリア点はターゲットを0にするための値。\n"
-                     + "ボーナス(500/100)とは別ルール。"
+                header = "SCORING",
+                body = "\n<b>【クリアボーナス】</b>\n"
+                    + "MASTER OUT <color=#FF3223>+500</color>\n"
+                    + "SINGLE OUT <color=#00E5FF>+100</color>\n\n"
+                    + "<b>【ボード得点】</b>\n"
+                    + "DOUBLE <color=#00F4A4>×2</color> / TRIPLE <color=#F7FF4C>×3</color>\n" // 倍率は緑と黄
+                    + "IN-BULL <color=#FF3223>50</color> / OUTER <color=#FF66CC>25</color>"   // BULL系は赤とピンク
             },
             new PageDef
             {
-                header = "STREAK",
-                body = "ヒットでコンボが蓄積！\n\n"
-                     + "GREAT (D / T / Bull)  <color=#FF3223>+2</color>\n"
-                     + "SINGLE  <color=#00E5FF>+1</color>\n\n"
-                     + "コンボが溜まると\n<b>制限時間が延長</b>！"
+                header = "COMBO",
+                body = "\nヒットでコンボ蓄積！\n\n"
+                    + "GREAT (D/T/Bull) <color=#FF3223>+2</color>\n"
+                    + "SINGLE <color=#00E5FF>+1</color>\n\n"
+                    + "コンボ数に応じて<b>制限時間が延長</b>！"
             },
             new PageDef
             {
                 header = "MISS",
-                body = "<color=#FF6666>BUST</color>       スコアオーバー\n\n"
-                     + "<color=#FF6666>MISS</color>        エリア外タップ\n\n"
-                     + "<color=#FF6666>NO OUT</color>    3投で届かない\n\n"
+                body = "\n<color=#FF6666>BUST</color>   ターゲット超過\n"
+                    + "<color=#FF6666>MISS</color>   エリア外\n"
+                   + "<color=#FF6666>NO OUT</color> 3投で未達\n\n"
                      + "→ コンボリセット"
-            },
+            }
         };
 
         int pageCount = pageDefs.Length;
