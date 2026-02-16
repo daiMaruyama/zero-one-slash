@@ -794,6 +794,7 @@ public class GameManager : MonoBehaviour
     }
     void SetStreak(int value)
     {
+        int prevStreak = _streak;
         _streak = Mathf.Max(0, value);
 
         if (streakText == null) return;
@@ -806,6 +807,30 @@ public class GameManager : MonoBehaviour
 
         streakText.gameObject.SetActive(true);
         streakText.text = $"COMBO: {_streak}";
+
+        // 1. コンボが増えた時だけ「弾む」アニメーション
+        if (_streak > prevStreak)
+        {
+            // 一旦リセットしてから、1.2倍に膨らんで戻る
+            streakText.transform.DOKill();
+            streakText.transform.localScale = Vector3.one;
+            streakText.transform.DOPunchScale(Vector3.one * 0.3f, 0.2f, 5, 0.5f);
+
+            // 2. コンボ数に応じて色を変える（熱量を出す）
+            Color streakColor = Color.white;
+            if (_streak >= 30) streakColor = new Color(1f, 0f, 1f); // 30〜：ピンク/マゼンタ（神）
+            else if (_streak >= 20) streakColor = Color.red;       // 20〜：赤（激熱）
+            else if (_streak >= 10) streakColor = Color.yellow;    // 10〜：黄（ノリノリ）
+            else if (_streak >= 5) streakColor = Color.cyan;      // 5〜：水色（コンボ開始）
+
+            streakText.color = streakColor;
+
+            // 3. 高コンボ時は画面を少し揺らす（GMから直接呼ぶ）
+            if (_streak >= 10 && CameraShake.instance != null)
+            {
+                CameraShake.instance.Shake(0.1f, 0.05f * (_streak / 10f));
+            }
+        }
     }
 
     // 秒を足して、PopUpも出す（バランスは後で調整すればOK）
