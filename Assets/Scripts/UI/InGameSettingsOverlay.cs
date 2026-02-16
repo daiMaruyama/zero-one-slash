@@ -17,6 +17,7 @@ public class InGameSettingsOverlay : MonoBehaviour
     Button _openButton;
     bool _isOpen;
     bool _isGameplayActive;
+    GameObject _resultPanel;
 
     public void Setup(Transform uiRoot)
     {
@@ -28,6 +29,12 @@ public class InGameSettingsOverlay : MonoBehaviour
         BuildPanel();
 
         SetGameplayActive(false);
+    }
+
+
+    public void BindResultPanel(GameObject resultPanel)
+    {
+        _resultPanel = resultPanel;
     }
 
     public void SetGameplayActive(bool active)
@@ -87,6 +94,10 @@ public class InGameSettingsOverlay : MonoBehaviour
         _openButton.targetGraphic = bg;
         _openButton.transition = Selectable.Transition.None;
         _openButton.onClick.AddListener(OpenPanel);
+
+        NeonResultButton openNeon = btnGO.GetComponent<NeonResultButton>();
+        if (openNeon == null) openNeon = btnGO.AddComponent<NeonResultButton>();
+        openNeon.Init(bg);
 
         Text label = CreateText("Label", btnGO.transform, "SETTING", font, 22, FontStyle.BoldAndItalic, Color.white);
         RectTransform lrt = label.rectTransform;
@@ -294,6 +305,10 @@ public class InGameSettingsOverlay : MonoBehaviour
         b.targetGraphic = bg;
         b.transition = Selectable.Transition.None;
 
+        NeonResultButton neon = go.GetComponent<NeonResultButton>();
+        if (neon == null) neon = go.AddComponent<NeonResultButton>();
+        neon.Init(bg);
+
         Text t = CreateText("Label", go.transform, label, font, 22, FontStyle.BoldAndItalic, Color.white);
         RectTransform trt = t.rectTransform;
         trt.anchorMin = Vector2.zero;
@@ -327,6 +342,17 @@ public class InGameSettingsOverlay : MonoBehaviour
 
     void LateUpdate()
     {
+        if (_resultPanel != null && _resultPanel.activeInHierarchy)
+        {
+            if (_isOpen || (_openButton != null && _openButton.gameObject.activeSelf))
+                ForceClosePanel();
+
+            if (_openButton != null)
+                _openButton.gameObject.SetActive(false);
+
+            return;
+        }
+
         if (_isOpen && _panel != null && _panel.activeSelf)
             _panel.transform.SetAsLastSibling();
     }

@@ -291,6 +291,7 @@ public class GameManager : MonoBehaviour
             _inGameSettingsOverlay = gameObject.AddComponent<InGameSettingsOverlay>();
 
         _inGameSettingsOverlay.Setup(uiRoot);
+        _inGameSettingsOverlay.BindResultPanel(resultPanel);
         _inGameSettingsOverlay.SetGameplayActive(false);
     }
 
@@ -736,7 +737,20 @@ public class GameManager : MonoBehaviour
         if (throwIcons != null) for (int i = 0; i < throwIcons.Length; i++) throwIcons[i].SetActive(i < throwsLeft);
     }
 
-    void ShowResultPanel() { if (resultPanel != null) { resultPanel.SetActive(true); AnimateResultScore(); } }
+    void ShowResultPanel()
+    {
+        if (_inGameSettingsOverlay != null)
+        {
+            _inGameSettingsOverlay.ForceClosePanel();
+            _inGameSettingsOverlay.SetGameplayActive(false);
+        }
+
+        if (resultPanel != null)
+        {
+            resultPanel.SetActive(true);
+            AnimateResultScore();
+        }
+    }
 
     /// <summary>
     /// デバッグ用に名前入力パネルを強制表示する。
