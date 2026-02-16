@@ -113,15 +113,18 @@ public class HowToPlayBuilder : MonoBehaviour
             new PageDef
             {
                 header = "RULE",
-                body = "ボードをタップして\nターゲットスコアを\n<b>3投以内</b>にゼロにしよう！\n\n"
-                     + "DOUBLE / TRIPLE / BULL を使って\n効率よく削るのがコツ。"
+                body = "表示されたお題スコアを\n<b>3投以内</b>でちょうど0にして\nクリアしよう！\n\n"
+                     + "ボードをタップして\n狙ったエリアに当てよう。"
             },
             new PageDef
             {
                 header = "SCORING",
-                body = "<b>MASTER OUT</b>\n  D / T / Bull で上がり\n  → <color=#FF3223>500 pts</color>\n\n"
-                     + "<b>SINGLE OUT</b>\n  シングルのみで上がり\n  → <color=#00E5FF>100 pts</color>\n\n"
-                     + "<b>BOARD POINTS</b>\n  DOUBLE=<color=#00F4A4>×2</color>  TRIPLE=<color=#F7FF4C>×3</color>"
+                body = "\n<b>【ボーナス】</b>\n"
+                     + "MASTER OUT <color=#FF3223>+500</color> / SINGLE <color=#00E5FF>+100</color>\n\n"
+                     + "<b>【エリア】</b>\n"
+                     + "DOUBLE <color=#00F4A4>×2</color> / TRIPLE <color=#F7FF4C>×3</color>\n"
+                     + "IN-BULL <color=#FF3223>50</color> / OUTER <color=#F7FF4C>25</color>\n\n"
+                     + "※上がり点そのものは自由。OUT時の条件でボーナスが決まる"
             },
             new PageDef
             {
