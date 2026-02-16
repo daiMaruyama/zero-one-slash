@@ -102,8 +102,8 @@ public class HowToPlayBuilder : MonoBehaviour
         // ===== ページ定義 =====
         Sprite[] sprites =
         {
-            imgRule,
             imgScoring,
+            imgRule,
             imgStreak,
             imgFail
         };
@@ -112,24 +112,26 @@ public class HowToPlayBuilder : MonoBehaviour
         {
             new PageDef
             {
-                header = "RULE",
-                body = "\n表示されたお題スコアを\n<b>3投以内</b>でちょうど0にして\nクリアしよう！\n\n"
-                     + "ボードをタップして\n狙ったエリアに当てよう。"
+                header = "SCORING BONUS",
+                body = "<b>まずはここだけ覚えよう</b>\n\n"
+                     + "MASTER OUT  <color=#FF3223>+500</color>\n"
+                     + "SINGLE OUT  <color=#00E5FF>+100</color>\n\n"
+                     + "※最終投がどの条件でOUTしたかで\n"
+                     + "ボーナス点が決まる。"
             },
             new PageDef
             {
-                header = "SCORING",
-                body = "\n<b>【ボーナス】</b>\n"
-                     + "MASTER OUT <color=#FF3223>+500</color>\nSINGLE <color=#00E5FF>+100</color>\n\n"
-                     + "<b>【エリア】</b>\n"
+                header = "BOARD AREA",
+                body = "<b>このページは“減点の手段”説明</b>\n\n"
                      + "DOUBLE <color=#00F4A4>×2</color> / TRIPLE <color=#F7FF4C>×3</color>\n"
                      + "IN-BULL <color=#FF3223>50</color> / OUTER <color=#F7FF4C>25</color>\n\n"
-                     + "※上がり点そのものは自由。\nOUT時の条件でボーナスが決まる"
+                     + "エリア点はターゲットを0にするための値。\n"
+                     + "ボーナス(500/100)とは別ルール。"
             },
             new PageDef
             {
-                header = "COMBO",
-                body = "\nヒットでコンボが蓄積！\n\n"
+                header = "STREAK",
+                body = "ヒットでコンボが蓄積！\n\n"
                      + "GREAT (D / T / Bull)  <color=#FF3223>+2</color>\n"
                      + "SINGLE  <color=#00E5FF>+1</color>\n\n"
                      + "コンボが溜まると\n<b>制限時間が延長</b>！"
@@ -137,7 +139,7 @@ public class HowToPlayBuilder : MonoBehaviour
             new PageDef
             {
                 header = "MISS",
-                body = "\n<color=#FF6666>BUST</color>       スコアオーバー\n\n"
+                body = "<color=#FF6666>BUST</color>       スコアオーバー\n\n"
                      + "<color=#FF6666>MISS</color>        エリア外タップ\n\n"
                      + "<color=#FF6666>NO OUT</color>    3投で届かない\n\n"
                      + "→ コンボリセット"
