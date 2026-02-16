@@ -60,6 +60,6 @@ public class Card : MonoBehaviour
 
         if (onHitCallback != null) onHitCallback();
 
-        Destroy(gameObject, 0.5f);
+        Destroy(gameObject, 0.5f); // スクショ用でコメントアウトすればカードの残る
     }
 }
