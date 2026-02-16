@@ -19,18 +19,23 @@ public class ResultPanelBuilder : MonoBehaviour
     {
         if (button == null) return;
 
+        // 背景トーン（TitleのネオンUIに寄せる）
+        var bg = button.GetComponent<Image>();
+        if (bg != null)
+            bg.color = new Color(0.09f, 0.13f, 0.2f, 0.88f);
+
         // フレーム
         var outline = button.GetComponent<Outline>();
         if (outline == null) outline = button.gameObject.AddComponent<Outline>();
-        outline.effectColor    = new Color(NeonRed.r, NeonRed.g, NeonRed.b, 0.6f);
+        outline.effectColor = new Color(NeonRed.r, NeonRed.g, NeonRed.b, 0.6f);
         outline.effectDistance = new Vector2(3f, -3f);
 
         // ラベル：白太字 + ネオングロー
         var label = button.GetComponentInChildren<Text>();
         if (label != null)
         {
-            label.color     = Color.white;
-            label.fontStyle = FontStyle.Bold;
+            label.color = Color.white;
+            label.fontStyle = FontStyle.BoldAndItalic;
             EnsureGlow(label.gameObject, NeonRed, 0.6f, 2);
         }
 
@@ -52,11 +57,11 @@ public class ResultPanelBuilder : MonoBehaviour
         }
 
         if (shadow == null) shadow = go.AddComponent<Shadow>();
-        shadow.effectColor    = new Color(baseColor.r, baseColor.g, baseColor.b, alpha);
+        shadow.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, alpha);
         shadow.effectDistance = new Vector2(strength, -strength);
 
         if (outline == null) outline = go.AddComponent<Outline>();
-        outline.effectColor    = new Color(baseColor.r, baseColor.g, baseColor.b, alpha * 0.6f);
+        outline.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, alpha * 0.6f);
         outline.effectDistance = new Vector2(strength, -strength);
     }
 }
