@@ -215,6 +215,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     void Start()
     {
+        SetupInGameSettingsOverlay();
+
         if (bgmMain != null)
         {
             if (AudioManager.instance != null) AudioManager.instance.PlayBGM(bgmMain);
@@ -262,6 +264,25 @@ public class GameManager : MonoBehaviour
             () => { if (seGameStart != null && AudioManager.instance != null) AudioManager.instance.PlaySE(seGameStart); },
             OnStartSequenceComplete
         );
+    }
+
+    void SetupInGameSettingsOverlay()
+    {
+        Transform uiRoot = null;
+
+        if (timeText != null)
+            uiRoot = timeText.canvas != null ? timeText.canvas.transform : null;
+
+        if (uiRoot == null && targetText != null)
+            uiRoot = targetText.transform.root;
+
+        if (uiRoot == null) return;
+
+        InGameSettingsOverlay overlay = GetComponent<InGameSettingsOverlay>();
+        if (overlay == null)
+            overlay = gameObject.AddComponent<InGameSettingsOverlay>();
+
+        overlay.Setup(uiRoot);
     }
 
     void OnStartSequenceComplete()
